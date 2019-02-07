@@ -2,8 +2,8 @@ package com.baizelmathew.spotifycontroller.spotifywrapper;
 
 import android.content.Context;
 import android.util.Log;
-import android.widget.Toast;
 
+import com.baizelmathew.spotifycontroller.utils.OnEventCallback;
 import com.spotify.android.appremote.api.ConnectionParams;
 import com.spotify.android.appremote.api.Connector;
 import com.spotify.android.appremote.api.SpotifyAppRemote;
@@ -15,10 +15,10 @@ public class Player {
     private static final String TAG = "Spotify"; // add this to class in utils
     private static final String CLIENT_ID = "05e5055c73a74eb8b8f536e3a2e5a3ac";
     private static final String REDIRECT_URI = "https://www.baizelmathew.com/callback";
-    private static SpotifyAppRemote mSpotifyAppRemote = null;
     private static ConnectionParams connectionParams = null;
     private static Player instance = null;
-    private PlayerState mPlayerState = null;
+    private static SpotifyAppRemote mSpotifyAppRemote = null;
+
 
     private Player() {
         connectionParams = new ConnectionParams.Builder(CLIENT_ID)
@@ -30,13 +30,13 @@ public class Player {
 
     public static Player getInstance() {
         if (instance == null) {
-            return new Player();
+            instance = new Player();
         }
         return instance;
     }
 
-    public void connect(Context context,final Connector.ConnectionListener callback) {
-        connect(context, callback,null);
+    public void connect(Context context, final Connector.ConnectionListener callback) {
+        connect(context, callback, null);
     }
 
     public void connect(Context context, final Connector.ConnectionListener callback, final Subscription.EventCallback<PlayerState> playerStateEventCallback) {
@@ -48,28 +48,11 @@ public class Player {
                         public void onConnected(SpotifyAppRemote spotifyAppRemote) {
                             //Set spotify remote
                             mSpotifyAppRemote = spotifyAppRemote;
+                            Subscription<PlayerState> subscription = mSpotifyAppRemote.getPlayerApi().subscribeToPlayerState();
+                            subscription.setEventCallback(playerStateEventCallback);
+                            callback.onConnected(mSpotifyAppRemote);
                             Log.d(TAG, "Connected to spotify");
 
-                            mSpotifyAppRemote.getPlayerApi().getPlayerState().setResultCallback(new CallResult.ResultCallback<PlayerState>() {
-                                @Override
-                                public void onResult(PlayerState playerState) {
-                                    mPlayerState = playerState;
-                                }
-                            });
-
-                            //Subscribe to playerState
-                            Subscription<PlayerState> subscription = mSpotifyAppRemote.getPlayerApi().subscribeToPlayerState();
-                            subscription.setEventCallback(new Subscription.EventCallback<PlayerState>() {
-                                @Override
-                                public void onEvent(PlayerState playerState) {
-                                    mPlayerState = playerState;
-                                    if (playerStateEventCallback != null) {
-                                        playerStateEventCallback.onEvent(mPlayerState);
-                                    }
-                                }
-                            });
-
-                            callback.onConnected(mSpotifyAppRemote);
                         }
 
                         @Override
@@ -79,6 +62,8 @@ public class Player {
                         }
                     });
         }
+
+
     }
 
     public void disconnect() {
@@ -89,8 +74,13 @@ public class Player {
         return mSpotifyAppRemote;
     }
 
-    public PlayerState getPlayerState(){
-        return  mPlayerState;
+    public void getPlayerState(final OnEventCallback callback) {
+        mSpotifyAppRemote.getPlayerApi().getPlayerState().setResultCallback(new CallResult.ResultCallback<PlayerState>() {
+            @Override
+            public void onResult(PlayerState playerState) {
+                callback.onEvent(playerState);
+            }
+        });
     }
 
 }
