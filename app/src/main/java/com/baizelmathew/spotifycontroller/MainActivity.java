@@ -3,10 +3,13 @@ package com.baizelmathew.spotifycontroller;
 import android.graphics.Bitmap;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.baizelmathew.spotifycontroller.spotifywrapper.Player;
+import com.baizelmathew.spotifycontroller.utils.OnEventCallback;
+import com.baizelmathew.spotifycontroller.web.WebServer;
 import com.jgabrielfreitas.core.BlurImageView;
 import com.spotify.android.appremote.api.Connector;
 import com.spotify.android.appremote.api.SpotifyAppRemote;
@@ -15,6 +18,8 @@ import com.spotify.protocol.client.Subscription;
 import com.spotify.protocol.types.Image;
 import com.spotify.protocol.types.PlayerState;
 import com.spotify.protocol.types.Track;
+
+import java.io.IOException;
 
 public class MainActivity extends AppCompatActivity {
     private Player p;
@@ -29,10 +34,19 @@ public class MainActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         p = Player.getInstance();
-        Subscription.EventCallback<PlayerState> playerStateEventCallback = new Subscription.EventCallback<PlayerState>() {
+        Subscription.EventCallback<PlayerState>  playerStateEventCallback = new Subscription.EventCallback<PlayerState>() {
             @Override
             public void onEvent(PlayerState playerState) {
                 updateInfo(playerState.track);
+                WebServer w = WebServer.getInstance(getApplicationContext());
+
+                updateLink(w.getHttpAddress());
+                try {
+                    w.start();
+                    fu("it may have worked");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         };
 
@@ -40,20 +54,30 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onConnected(SpotifyAppRemote spotifyAppRemote) {
-                updateInfo(p.getPlayerState().track);
-                //TODO:
+                p.getPlayerState(new OnEventCallback() {
+                    @Override
+                    public void onEvent(PlayerState playerState) {
+                        updateInfo(playerState.track);
+                    }
+                });
+
                 //launchServer();
             }
 
             @Override
             public void onFailure(Throwable throwable) {
                 //TODO: Implement this
-                fu("Reeeeee");
+                fu("Reeeeee " + throwable.getLocalizedMessage());
             }
         };
 
         p.connect(this, connectionListener, playerStateEventCallback);
 
+    }
+
+    private void updateLink(String address) {
+        TextView link = findViewById(R.id.link);
+        link.setText(address);
     }
 
     private void fu(String s) {
@@ -64,7 +88,7 @@ public class MainActivity extends AppCompatActivity {
     private void updateInfo(Track t) {
         SpotifyAppRemote remote = p.getSpotifyAppRemote();
 
-        if (t != null){
+        if (t != null) {
             remote.getImagesApi().getImage(t.imageUri, Image.Dimension.LARGE).setResultCallback(new CallResult.ResultCallback<Bitmap>() {
                 @Override
                 public void onResult(Bitmap bitmap) {
@@ -77,6 +101,7 @@ public class MainActivity extends AppCompatActivity {
             song.setText(t.name);
             TextView artist = findViewById(R.id.artist);
             artist.setText(t.artist.name);
+
         }
     }
 
@@ -84,7 +109,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onStop() {
         super.onStop();
         p.disconnect();
-        Toast toast = Toast.makeText(this, "STOP PLS", Toast.LENGTH_LONG);
+        Toast toast = Toast.makeText(this, "Killing all servers", Toast.LENGTH_LONG);
         toast.show();
+        WebServer.getInstance(getApplicationContext()).stop();
     }
 }
