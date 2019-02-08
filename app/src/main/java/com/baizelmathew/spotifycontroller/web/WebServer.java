@@ -1,8 +1,13 @@
 package com.baizelmathew.spotifycontroller.web;
 
 import android.content.Context;
+import android.content.res.Resources;
+import android.util.Log;
 
+import com.baizelmathew.spotifycontroller.R;
+import com.baizelmathew.spotifycontroller.spotifywrapper.Player;
 import com.baizelmathew.spotifycontroller.utils.DataInjector;
+import com.baizelmathew.spotifycontroller.utils.FallbackErrorPage;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -14,29 +19,26 @@ import java.util.List;
 import fi.iki.elonen.NanoHTTPD;
 
 public class WebServer extends NanoHTTPD {
-    private Context c;
     private WebSocket webSocket;
     private static boolean isIpv4 = true;
     private static final String IP_ADDRESS = getIPAddress(isIpv4);
     private static final int HTTP_PORT = 8080;
     private static final int SOCKET_PORT = 6969;
     private static String httpAddress;
-    private static String socketAddress;
     private static final String PLAY_ARROW = "play_arrow";
     private static final String pause = "pause";
     private static WebServer server = null;
 
-    public static WebServer getInstance(Context context) {
+    public static WebServer getInstance() {
         if (server == null) {
-            return server = new WebServer(context);
+            return server = new WebServer();
         }
         return server;
     }
 
-    private WebServer(Context context) {
+    private WebServer() {
         super(IP_ADDRESS, HTTP_PORT);
         httpAddress = "http://" + IP_ADDRESS + ":" + HTTP_PORT;
-        this.c = context;
         webSocket = new WebSocket(IP_ADDRESS, SOCKET_PORT).registerCallback(new WebSocketCallback() {
             @Override
             public void onClose(org.java_websocket.WebSocket conn, int code, String reason, boolean remote) {
@@ -54,7 +56,6 @@ public class WebServer extends NanoHTTPD {
             }
         });
         webSocket.start();
-        socketAddress = webSocket.getWsAddress();
     }
 
     private static String getIPAddress(boolean useIPv4) {
@@ -89,23 +90,25 @@ public class WebServer extends NanoHTTPD {
         return httpAddress;
     }
 
-    public String getScoketAdress() {
-        return socketAddress;
-    }
-
     @Override
     public Response serve(IHTTPSession session) {
         HashMap<String, String> data = new HashMap<>();
         data.put("PlayIcon", PLAY_ARROW);
         data.put("SongName", "Loading..");
         data.put("SongDescription", "Loading..");
-        data.put("socket", socketAddress);
+        data.put("socket", webSocket.getWsAddress());
+        data.put("InitialState", Player.getInstance().getInitialPlayerState());
+
         String page;
         try {
-            page = DataInjector.injectData(c, "index.html", data);
+            page = new DataInjector().injectData("index.html", data);
         } catch (IOException e) {
             e.printStackTrace();
-            page = "Error";
+            page = FallbackErrorPage.getErrorPage();
+
+        } catch (NullPointerException n) {
+            n.printStackTrace();
+            page = FallbackErrorPage.getErrorPage();
         }
         return newFixedLengthResponse(page);
     }

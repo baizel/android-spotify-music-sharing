@@ -4,6 +4,7 @@ import android.content.Context;
 import android.util.Log;
 
 import com.baizelmathew.spotifycontroller.utils.OnEventCallback;
+import com.google.gson.Gson;
 import com.spotify.android.appremote.api.ConnectionParams;
 import com.spotify.android.appremote.api.Connector;
 import com.spotify.android.appremote.api.SpotifyAppRemote;
@@ -12,13 +13,13 @@ import com.spotify.protocol.client.Subscription;
 import com.spotify.protocol.types.PlayerState;
 
 public class Player {
-    private static final String TAG = "Spotify"; // add this to class in utils
+    private static final String TAG = "Spotify"; // TODO: add this to class in utils
     private static final String CLIENT_ID = "05e5055c73a74eb8b8f536e3a2e5a3ac";
     private static final String REDIRECT_URI = "https://www.baizelmathew.com/callback";
     private static ConnectionParams connectionParams = null;
     private static Player instance = null;
     private static SpotifyAppRemote mSpotifyAppRemote = null;
-
+    private String initialPlayerState = null;
 
     private Player() {
         connectionParams = new ConnectionParams.Builder(CLIENT_ID)
@@ -26,6 +27,13 @@ public class Player {
                 .showAuthView(true)
                 .build();
 
+    }
+
+    private void updatePlayerState(String gsonState) {
+        initialPlayerState = gsonState;
+    }
+    public String getInitialPlayerState(){
+        return initialPlayerState;
     }
 
     public static Player getInstance() {
@@ -49,7 +57,14 @@ public class Player {
                             //Set spotify remote
                             mSpotifyAppRemote = spotifyAppRemote;
                             Subscription<PlayerState> subscription = mSpotifyAppRemote.getPlayerApi().subscribeToPlayerState();
-                            subscription.setEventCallback(playerStateEventCallback);
+                            subscription.setEventCallback(new Subscription.EventCallback<PlayerState>() {
+                                @Override
+                                public void onEvent(PlayerState playerState) {
+                                    Gson g = new Gson();
+                                    updatePlayerState(g.toJson(playerState));
+                                    playerStateEventCallback.onEvent(playerState);
+                                }
+                            });
                             callback.onConnected(mSpotifyAppRemote);
                             Log.d(TAG, "Connected to spotify");
 
