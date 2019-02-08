@@ -1,21 +1,22 @@
 package com.baizelmathew.spotifycontroller.utils;
 
-import android.content.Context;
-import android.util.Log;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.HashMap;
+import java.util.Objects;
 
 public final class DataInjector {
 
-    private DataInjector() {
+    public DataInjector() {
     }
 
-    public static String injectData(Context context, String fileName, HashMap<String, String> data) throws IOException {
-        InputStream inputStream = context.getAssets().open(fileName);
+    public String injectData(String fileName, HashMap<String, String> data) throws NullPointerException, IOException {
+        InputStream inputStream = Objects.requireNonNull(this.getClass().getClassLoader()).getResourceAsStream("res/raw/"+fileName);
+        if (inputStream == null)
+            throw new NullPointerException("Error Reading file "+fileName);
+
         BufferedReader r = new BufferedReader(new InputStreamReader(inputStream));
         StringBuilder total = new StringBuilder();
         for (String line; (line = r.readLine()) != null; ) {
@@ -27,5 +28,5 @@ public final class DataInjector {
         }
         return total.toString();
 
-    }
+}
 }

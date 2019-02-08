@@ -1,5 +1,6 @@
 package com.baizelmathew.spotifycontroller;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -38,8 +39,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onEvent(PlayerState playerState) {
                 updateInfo(playerState.track);
-                WebServer w = WebServer.getInstance(getApplicationContext());
-
+                WebServer w = WebServer.getInstance();
                 updateLink(w.getHttpAddress());
                 try {
                     w.start();
@@ -111,6 +111,6 @@ public class MainActivity extends AppCompatActivity {
         p.disconnect();
         Toast toast = Toast.makeText(this, "Killing all servers", Toast.LENGTH_LONG);
         toast.show();
-        WebServer.getInstance(getApplicationContext()).stop();
+        WebServer.getInstance().stop();
     }
 }
