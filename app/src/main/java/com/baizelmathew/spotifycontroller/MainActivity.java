@@ -1,78 +1,68 @@
 package com.baizelmathew.spotifycontroller;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
+import android.view.View;
 import android.widget.TextView;
-import android.widget.Toast;
 
+import com.baizelmathew.spotifycontroller.service.ForeGroundServerService;
 import com.baizelmathew.spotifycontroller.spotifywrapper.Player;
-import com.baizelmathew.spotifycontroller.utils.OnEventCallback;
-import com.baizelmathew.spotifycontroller.web.WebServer;
+import com.baizelmathew.spotifycontroller.utils.ServiceBroadcastReceiver;
+import com.google.gson.Gson;
 import com.jgabrielfreitas.core.BlurImageView;
-import com.spotify.android.appremote.api.Connector;
 import com.spotify.android.appremote.api.SpotifyAppRemote;
 import com.spotify.protocol.client.CallResult;
-import com.spotify.protocol.client.Subscription;
 import com.spotify.protocol.types.Image;
-import com.spotify.protocol.types.PlayerState;
 import com.spotify.protocol.types.Track;
 
-import java.io.IOException;
-
 public class MainActivity extends AppCompatActivity {
-    private Player p;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        LocalBroadcastManager.getInstance(this).registerReceiver(
+                new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        String track = intent.getStringExtra(ForeGroundServerService.EXTRA_TRACK);
+                        updateInfo(new Gson().fromJson(track, Track.class));
+                    }
+                }, new IntentFilter(ForeGroundServerService.ACTION_TRACK_BROADCAST)
+        );
+
+        LocalBroadcastManager.getInstance(this).registerReceiver(
+                new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        String link = intent.getStringExtra(ForeGroundServerService.EXTRA_SERVER_ADDRESS);
+                        updateLink(link);
+                    }
+                }, new IntentFilter(ForeGroundServerService.ACTION_SERVER_ADDRESS_BROADCAST)
+        );
+
+        broadcastForeGroundService(ForeGroundServerService.ACTION_START_FOREGROUND_SERVICE);
     }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-        p = Player.getInstance();
-        Subscription.EventCallback<PlayerState>  playerStateEventCallback = new Subscription.EventCallback<PlayerState>() {
-            @Override
-            public void onEvent(PlayerState playerState) {
-                updateInfo(playerState.track);
-                WebServer w = WebServer.getInstance();
-                updateLink(w.getHttpAddress());
-                try {
-                    w.start();
-                    fu("it may have worked");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        };
+    public void onClickStop(View v) {
+        broadcastForeGroundService(ForeGroundServerService.ACTION_STOP_FOREGROUND_SERVICE);
+    }
 
-        Connector.ConnectionListener connectionListener = new Connector.ConnectionListener() {
+    public void onClickStart(View v) {
+        broadcastForeGroundService(ForeGroundServerService.ACTION_START_FOREGROUND_SERVICE);
+    }
 
-            @Override
-            public void onConnected(SpotifyAppRemote spotifyAppRemote) {
-                p.getPlayerState(new OnEventCallback() {
-                    @Override
-                    public void onEvent(PlayerState playerState) {
-                        updateInfo(playerState.track);
-                    }
-                });
-
-                //launchServer();
-            }
-
-            @Override
-            public void onFailure(Throwable throwable) {
-                //TODO: Implement this
-                fu("Reeeeee " + throwable.getLocalizedMessage());
-            }
-        };
-
-        p.connect(this, connectionListener, playerStateEventCallback);
-
+    private void broadcastForeGroundService(String action) {
+        //start Server
+        Intent startForeGroundServiceIntent = new Intent(this, ServiceBroadcastReceiver.class);
+        startForeGroundServiceIntent.setAction(action);
+        sendBroadcast(startForeGroundServiceIntent);
     }
 
     private void updateLink(String address) {
@@ -80,13 +70,8 @@ public class MainActivity extends AppCompatActivity {
         link.setText(address);
     }
 
-    private void fu(String s) {
-        Toast toast = Toast.makeText(this, s, Toast.LENGTH_LONG);
-        toast.show();
-    }
-
     private void updateInfo(Track t) {
-        SpotifyAppRemote remote = p.getSpotifyAppRemote();
+        SpotifyAppRemote remote = Player.getInstance().getSpotifyAppRemote();
 
         if (t != null) {
             remote.getImagesApi().getImage(t.imageUri, Image.Dimension.LARGE).setResultCallback(new CallResult.ResultCallback<Bitmap>() {
@@ -103,14 +88,5 @@ public class MainActivity extends AppCompatActivity {
             artist.setText(t.artist.name);
 
         }
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        p.disconnect();
-        Toast toast = Toast.makeText(this, "Killing all servers", Toast.LENGTH_LONG);
-        toast.show();
-        WebServer.getInstance().stop();
     }
 }
