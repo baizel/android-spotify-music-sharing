@@ -1,10 +1,5 @@
 package com.baizelmathew.spotifycontroller.web;
 
-import android.content.Context;
-import android.content.res.Resources;
-import android.util.Log;
-
-import com.baizelmathew.spotifycontroller.R;
 import com.baizelmathew.spotifycontroller.spotifywrapper.Player;
 import com.baizelmathew.spotifycontroller.utils.DataInjector;
 import com.baizelmathew.spotifycontroller.utils.FallbackErrorPage;
@@ -19,15 +14,22 @@ import java.util.List;
 import fi.iki.elonen.NanoHTTPD;
 
 public class WebServer extends NanoHTTPD {
-    private WebSocket webSocket;
-    private static boolean isIpv4 = true;
-    private static final String IP_ADDRESS = getIPAddress(isIpv4);
+
     private static final int HTTP_PORT = 8080;
     private static final int SOCKET_PORT = 6969;
-    private static String httpAddress;
     private static final String PLAY_ARROW = "play_arrow";
     private static final String pause = "pause";
+
+    private static boolean isIpv4 = true;
+    private static String httpAddress;
     private static WebServer server = null;
+
+    private static boolean isIncomingPaused = false;
+    private WebSocket webSocket;
+
+    public static final String ACTION_PAUSE_ALL_INCOMING_REQUEST = "pause_all_incoming_requests";
+    public static final String EXTRA_PAUSE_INCOMING_REQUEST_STATE = "EXTRA_PAUSE_INCOMING_REQUEST_STATE";
+
 
     public static WebServer getInstance() {
         if (server == null) {
@@ -37,9 +39,11 @@ public class WebServer extends NanoHTTPD {
     }
 
     private WebServer() {
-        super(IP_ADDRESS, HTTP_PORT);
-        httpAddress = "http://" + IP_ADDRESS + ":" + HTTP_PORT;
-        webSocket = new WebSocket(IP_ADDRESS, SOCKET_PORT).registerCallback(new WebSocketCallback() {
+        super(getIPAddress(isIpv4), HTTP_PORT);
+        String ipAddress = getIPAddress(isIpv4);
+
+        httpAddress = "http://" + ipAddress + ":" + HTTP_PORT;
+        webSocket = new WebSocket(ipAddress, SOCKET_PORT).registerCallback(new WebSocketCallback() {
             @Override
             public void onClose(org.java_websocket.WebSocket conn, int code, String reason, boolean remote) {
 
@@ -47,7 +51,9 @@ public class WebServer extends NanoHTTPD {
 
             @Override
             public void onMessage(org.java_websocket.WebSocket conn, String message) {
-
+                if (!isIncomingPaused) {
+                    //TODO:
+                }
             }
 
             @Override
@@ -55,7 +61,20 @@ public class WebServer extends NanoHTTPD {
 
             }
         });
+    }
+
+    public static boolean getIncomingPaused() {
+        return isIncomingPaused;
+    }
+
+    public static void setIncomingPaused(boolean bool) {
+        isIncomingPaused = bool;
+    }
+
+    public void startServer() throws IOException {
         webSocket.start();
+        this.start();
+
     }
 
     private static String getIPAddress(boolean useIPv4) {
@@ -118,10 +137,13 @@ public class WebServer extends NanoHTTPD {
         super.stop();
         try {
             webSocket.stop();
+            webSocket = null;
+            server = null;
         } catch (IOException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
+
 }
