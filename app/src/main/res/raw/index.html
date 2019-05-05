@@ -57,8 +57,8 @@
 			function addOn(maxTries){
                 connection = new WebSocket(socket)
                 connection.onmessage = function (m){
-                    console.log("OnMessage");
                     msg = JSON.parse(m.data);
+                    console.log(msg);
                     (msg["is_paused"]) ? document.getElementById("PlayIcon").innerHTML = "play_arrow":document.getElementById("PlayIcon").innerHTML = "pause"
                     document.getElementById("SongName").innerHTML = msg["track"]["name"]
                     document.getElementById("SongDescription").innerHTML = "By "+ msg["track"]["artist"]["name"]

@@ -3,6 +3,11 @@ package com.baizelmathew.spotifycontroller.web;
 import com.baizelmathew.spotifycontroller.spotifywrapper.Player;
 import com.baizelmathew.spotifycontroller.utils.DataInjector;
 import com.baizelmathew.spotifycontroller.utils.FallbackErrorPage;
+import com.baizelmathew.spotifycontroller.utils.OnEventCallback;
+import com.spotify.protocol.types.PlayerState;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -37,7 +42,9 @@ public class WebServer extends NanoHTTPD {
         }
         return server;
     }
-
+    public void startListinig(){
+        webSocket.startListiningToState();
+    }
     private WebServer() {
         super(getIPAddress(isIpv4), HTTP_PORT);
         String ipAddress = getIPAddress(isIpv4);
@@ -52,7 +59,32 @@ public class WebServer extends NanoHTTPD {
             @Override
             public void onMessage(org.java_websocket.WebSocket conn, String message) {
                 if (!isIncomingPaused) {
-                    //TODO:
+                    try {
+                        final Player player = Player.getInstance();
+                        JSONObject msg = new JSONObject(message);
+                        switch (msg.getString("payload")) {
+                            case "next":
+                                player.getSpotifyAppRemote().getPlayerApi().skipNext();
+                                break;
+                            case "previous":
+                                player.getSpotifyAppRemote().getPlayerApi().skipPrevious();
+                                break;
+                            case "play":
+                                player.getPlayerState(new OnEventCallback() {
+                                    @Override
+                                    public void onEvent(PlayerState playerState) {
+                                        if (playerState.isPaused)
+                                            player.getSpotifyAppRemote().getPlayerApi().resume();
+                                        else
+                                            player.getSpotifyAppRemote().getPlayerApi().pause();
+                                    }
+                                });
+                            case "playUri":
+                                String uri = msg.getString("uri");
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
 

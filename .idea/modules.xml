@@ -5,6 +5,8 @@
       <module fileurl="file://$PROJECT_DIR$/MobileDev.iml" filepath="$PROJECT_DIR$/MobileDev.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
       <module fileurl="file://$PROJECT_DIR$/spotify-app-remote-release-0.6.0/spotify-app-remote-release-0.6.0.iml" filepath="$PROJECT_DIR$/spotify-app-remote-release-0.6.0/spotify-app-remote-release-0.6.0.iml" />
+      <module fileurl="file://$PROJECT_DIR$/spotify-app-remote-release-0.6.1/spotify-app-remote-release-0.6.1.iml" filepath="$PROJECT_DIR$/spotify-app-remote-release-0.6.1/spotify-app-remote-release-0.6.1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/spotify-auth-release-1.1.0/spotify-auth-release-1.1.0.iml" filepath="$PROJECT_DIR$/spotify-auth-release-1.1.0/spotify-auth-release-1.1.0.iml" />
     </modules>
   </component>
 </project>

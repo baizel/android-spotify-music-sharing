@@ -33,7 +33,7 @@ dependencies {
 
     implementation 'org.nanohttpd:nanohttpd:2.2.0'
 
-    implementation project(':spotify-app-remote-release-0.6.0')
+    implementation project(':spotify-app-remote-release-0.6.1')
     implementation "com.google.code.gson:gson:2.8.5"
 
     implementation 'com.github.jgabrielfreitas:BlurImageView:1.0.1'
