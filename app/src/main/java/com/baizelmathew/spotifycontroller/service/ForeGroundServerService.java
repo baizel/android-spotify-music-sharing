@@ -120,7 +120,6 @@ public class ForeGroundServerService extends Service {
 
         webServer = WebServer.getInstance();
         player = Player.getInstance();
-
         Subscription.EventCallback<PlayerState> playerStateEventCallback = new Subscription.EventCallback<PlayerState>() {
             @Override
             public void onEvent(PlayerState playerState) {
@@ -139,6 +138,7 @@ public class ForeGroundServerService extends Service {
         Connector.ConnectionListener connectionListener = new Connector.ConnectionListener() {
             @Override
             public void onConnected(SpotifyAppRemote spotifyAppRemote) {
+                webServer.startListinig();
                 player.getPlayerState(new OnEventCallback() {
                     @Override
                     public void onEvent(PlayerState playerState) {
@@ -174,7 +174,7 @@ public class ForeGroundServerService extends Service {
         webServer.stop();
         player.disconnect();
         this.unregisterReceiver(serviceBroadcastReceiver);
-        debugToast("KILL ALL :)");
+        debugToast("KILLED ALL ");
 
     }
 

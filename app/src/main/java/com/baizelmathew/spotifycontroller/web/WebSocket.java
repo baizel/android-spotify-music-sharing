@@ -5,14 +5,13 @@ import android.util.Log;
 import com.baizelmathew.spotifycontroller.spotifywrapper.Player;
 import com.baizelmathew.spotifycontroller.utils.OnEventCallback;
 import com.google.gson.Gson;
-import com.spotify.android.appremote.api.SpotifyAppRemote;
+import com.spotify.protocol.client.Subscription;
 import com.spotify.protocol.types.PlayerState;
 
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
 
 import java.net.InetSocketAddress;
-import java.nio.channels.SelectionKey;
 
 public class WebSocket extends WebSocketServer {
     private static String TAG = "MySocket";
@@ -23,6 +22,7 @@ public class WebSocket extends WebSocketServer {
     public WebSocket(String host, int port) {
         super(new InetSocketAddress(host, port));
         wsAddress = "ws://" + host + ":" + port;
+
         Log.d(TAG, "Constructed");
     }
 
@@ -35,11 +35,21 @@ public class WebSocket extends WebSocketServer {
         return this;
     }
 
-
+    public void startListiningToState(){
+        Player player = Player.getInstance();
+        player.getSpotifyAppRemote().getPlayerApi().subscribeToPlayerState().setEventCallback(new Subscription.EventCallback<PlayerState>() {
+            @Override
+            public void onEvent(PlayerState playerState) {
+                String state = new Gson().toJson(playerState);
+                broadcast(state);
+                Log.d(TAG, "broadcast state " + state);
+            }
+        });
+    }
     @Override
     public void onOpen(org.java_websocket.WebSocket conn, ClientHandshake handshake) {
         Log.d(TAG, "new connection to " + conn.getRemoteSocketAddress());
-        brodcastState();
+        broadcastState();
     }
 
     @Override
@@ -51,7 +61,6 @@ public class WebSocket extends WebSocketServer {
     @Override
     public void onMessage(org.java_websocket.WebSocket conn, String message) {
         Log.d(TAG, "Got message " + message);
-        brodcastState();
         callback.onMessage(conn, message);
 
     }
@@ -64,19 +73,19 @@ public class WebSocket extends WebSocketServer {
 
     @Override
     public void onStart() {
-        brodcastState();
+        broadcastState();
         Log.d(TAG, "Start web socket server");
 
     }
 
-    private void brodcastState() {
+    private void broadcastState() {
         Player m = Player.getInstance();
         m.getPlayerState(new OnEventCallback() {
             @Override
             public void onEvent(PlayerState playerState) {
                 String state = new Gson().toJson(playerState);
                 broadcast(state);
-                Log.d(TAG, state);
+                Log.d(TAG, "broadcast state " + state);
             }
         });
     }
