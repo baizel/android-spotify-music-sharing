@@ -17,7 +17,12 @@ android {
         }
     }
 }
-
+repositories {
+    mavenCentral()
+    flatDir {
+        dirs 'libs'
+    }
+}
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation 'com.android.support:appcompat-v7:28.0.0'
@@ -34,6 +39,7 @@ dependencies {
     implementation 'org.nanohttpd:nanohttpd:2.2.0'
 
     implementation project(':spotify-app-remote-release-0.6.1')
+    implementation 'com.spotify.sdk:spotify-auth-release:1.1.0@aar'
     implementation "com.google.code.gson:gson:2.8.5"
 
     implementation 'com.github.jgabrielfreitas:BlurImageView:1.0.1'

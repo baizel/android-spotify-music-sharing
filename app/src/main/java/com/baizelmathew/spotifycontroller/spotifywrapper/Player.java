@@ -13,26 +13,36 @@ import com.spotify.protocol.client.Subscription;
 import com.spotify.protocol.types.PlayerState;
 
 public class Player {
+    public static final int REQUEST_CODE = 1337;
+    public static final String REDIRECT_URI = "https://www.baizelmathew.com/callback";
     private static final String TAG = "Spotify"; // TODO: add this to class in utils
-    private static final String CLIENT_ID = "05e5055c73a74eb8b8f536e3a2e5a3ac";
-    private static final String REDIRECT_URI = "https://www.baizelmathew.com/callback";
+    public static final String CLIENT_ID = "05e5055c73a74eb8b8f536e3a2e5a3ac";
     private static ConnectionParams connectionParams = null;
     private static Player instance = null;
     private static SpotifyAppRemote mSpotifyAppRemote = null;
     private String initialPlayerState = null;
+    private static String accessToken = null;
 
     private Player() {
         connectionParams = new ConnectionParams.Builder(CLIENT_ID)
                 .setRedirectUri(REDIRECT_URI)
                 .showAuthView(true)
                 .build();
+    }
 
+    public static void setAccessToken(String accessToken) {
+        Player.accessToken = accessToken;
+    }
+
+    public static String getAccessToken() {
+        return accessToken;
     }
 
     private void updatePlayerState(String gsonState) {
         initialPlayerState = gsonState;
     }
-    public String getInitialPlayerState(){
+
+    public String getInitialPlayerState() {
         return initialPlayerState;
     }
 

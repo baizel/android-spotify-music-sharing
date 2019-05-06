@@ -81,6 +81,7 @@ public class WebServer extends NanoHTTPD {
                                 });
                             case "playUri":
                                 String uri = msg.getString("uri");
+                                player.getSpotifyAppRemote().getPlayerApi().queue(uri);
                         }
                     } catch (JSONException e) {
                         e.printStackTrace();
@@ -144,6 +145,7 @@ public class WebServer extends NanoHTTPD {
     @Override
     public Response serve(IHTTPSession session) {
         HashMap<String, String> data = new HashMap<>();
+        data.put("token",Player.getAccessToken());
         data.put("PlayIcon", PLAY_ARROW);
         data.put("SongName", "Loading..");
         data.put("SongDescription", "Loading..");
