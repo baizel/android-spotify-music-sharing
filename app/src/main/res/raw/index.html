@@ -1,162 +1,190 @@
 <!DOCTYPE html>
 <html>
-<style>
-    body {background-color: #424242;}
-    h2 {color:white;}
+    <style>
+    body {
+        background-color: #424242;
+    }
+
+    h2 {
+        color: white;
+    }
 </style>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Music Controller</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js  "></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-beta/css/materialize.min.css">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-</head>
-<body>
-    <div id="modal" class="modal  grey darken-1">
-        <div class="modal-content">
-            <h4>Songs</h4>
-            <div id="songsRes">
-                <ul>
-                </ul>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <a href="#!" class="modal-action modal-close waves-effect waves-green btn-flat">Close</a>
-        </div>
-    </div>
-
-<div class="container">
-    <h2 class="center"> Spotify WebApp</h2>
-
-
-    <div class="row z-depth-2 grey darken-1">
-        <div class="container">
-            <form class="col s12">
-                <h5 class="white-text"> Add song to queue</h5>
-
-                <div class="row">
-                    <div class="input-field col s12 white-text center">
-                        <input placeholder="Search for a song" id="songSearch" type="text" class="white-text">
-                        <label for="songSearch">Search</label>
-                    </div>
-                </div>
-                <button type="button" class="btn waves-effect waves-light grey darken-3 center" onclick="search()">Search
-                    <i class="material-icons right">send</i>
-                </button>
-                <div class="row">
-
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div class="row z-depth-2 grey darken-1">
-        <div class="container">
-            <form class="col s12">
-                <h5 class="white-text"> Add song to queue</h5>
-
-                <div class="row">
-                    <div class="input-field col s12 white-text center">
-                        <input placeholder="https://open.spotify.com/track/6QkiPUXtsyXWcHiAaFXam5" id="song_uri" type="text" class="white-text">
-                        <label for="song_uri">Song share link</label>
-                    </div>
-                </div>
-                <button type="button" class="btn waves-effect waves-light grey darken-3 center" onclick="onQueue()">Add to Queue
-                    <i class="material-icons right">send</i>
-                </button>
-                <div class="row">
-
-                </div>
-            </form>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col s12">
-            <div class="card-panel grey darken-1">
-                <div class="card-content white-text center">
-                    <h5 id ="SongName" class="card-title">{{SongName}}</h5>
-                    <h6 id = "SongDescription">{{SongDescription}}</h6>
-                </div>
-                <div class="card-action center">
-                    <a class="btn-large waves-effect waves-light grey darken-3" onclick="onPrevious()"><i class="white-text medium material-icons">skip_previous</i></a>
-                    <a class="btn-large waves-effect waves-light grey darken-3" onclick="onPlay()"><i class="white-text medium material-icons" id="PlayIcon">play_arrow</i></a>
-                    <a class="btn-large waves-effect waves-light grey darken-3" onclick="onNext()"><i class="white-text medium material-icons">skip_next</i></a>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Music Controller</title>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js  "></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-beta/css/materialize.min.css">
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    </head>
+    <body>
+        <div id="modal" class="modal  grey darken-1">
+            <div class="modal-content">
+                <h4>Songs</h4>
+                <div id="songsRes">
+                    <ul>
+                    </ul>
                 </div>
             </div>
+            <div class="modal-footer">
+                <a href="#!" class="modal-action modal-close waves-effect waves-green btn-flat">Close</a>
+            </div>
         </div>
-    </div>
-</div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-beta/js/materialize.min.js"></script>
-<script>
-$(document).ready(function(){
-    $('#modal').modal();
- });
+
+        <div class="container">
+            <h2 class="center"> Spotify WebApp</h2>
+
+
+            <div class="row z-depth-2 grey darken-1">
+                <div class="container">
+                    <form class="col s12" autocomplete="off">
+                        <h5 class="white-text"> Add song to queue</h5>
+
+                        <div class="row">
+                            <div class="input-field col s12 white-text center">
+                                <input placeholder="Search for a song" id="songSearch" type="text" class="white-text">
+                                <label for="songSearch">Search</label>
+                            </div>
+                        </div>
+                        <button type="button" class="btn waves-effect waves-light grey darken-3 center" onclick="search()">Search
+                            <i class="material-icons right">send</i>
+                        </button>
+                        <div class="row">
+
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="row z-depth-2 grey darken-1">
+                <div class="container">
+                    <form class="col s12" autocomplete="off">
+                        <h5 class="white-text"> Add song to queue</h5>
+
+                        <div class="row">
+                            <div class="input-field col s12 white-text center">
+                                <input placeholder="https://open.spotify.com/track/6QkiPUXtsyXWcHiAaFXam5" id="song_uri" type="text" class="white-text">
+                                <label for="song_uri">Song share link</label>
+                            </div>
+                        </div>
+                        <button type="button" class="btn waves-effect waves-light grey darken-3 center" onclick="onQueue()">Add to Queue
+                            <i class="material-icons right">send</i>
+                        </button>
+                        <div class="row">
+
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col s12">
+                    <div class="card-panel grey darken-1">
+                        <div class="card-content white-text center">
+                            <h5 id="SongName" class="card-title">{{ SongName }}</h5>
+                            <h6 id="SongDescription">{{ SongDescription }}</h6>
+                        </div>
+                        <div class="card-action center">
+                            <a class="btn-large waves-effect waves-light grey darken-3" onclick="onPrevious()"><i class="white-text medium material-icons">skip_previous</i></a>
+                            <a class="btn-large waves-effect waves-light grey darken-3" onclick="onPlay()"><i class="white-text medium material-icons" id="PlayIcon">play_arrow</i></a>
+                            <a class="btn-large waves-effect waves-light grey darken-3" onclick="onNext()"><i class="white-text medium material-icons">skip_next</i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-beta/js/materialize.min.js"></script>
+        <script>
+            $(document).ready(function () {
+                $('#modal').modal();
+            });
             var socket = "{{socket}}";
             var token = "{{token}}"
             var connection = new WebSocket(socket);
-			function addOn(maxTries){
+
+            function addOn(maxTries) {
                 connection = new WebSocket(socket)
-                connection.onmessage = function (m){
+                connection.onmessage = function (m) {
                     msg = JSON.parse(m.data);
                     console.log(msg);
-                    (msg["is_paused"]) ? document.getElementById("PlayIcon").innerHTML = "play_arrow":document.getElementById("PlayIcon").innerHTML = "pause"
+                    (msg["is_paused"]) ? document.getElementById("PlayIcon").innerHTML = "play_arrow" : document.getElementById("PlayIcon").innerHTML = "pause"
                     document.getElementById("SongName").innerHTML = msg["track"]["name"]
-                    document.getElementById("SongDescription").innerHTML = "By "+ msg["track"]["artist"]["name"]
+                    document.getElementById("SongDescription").innerHTML = "By " + msg["track"]["artist"]["name"]
                 };
-                connection.onclose = function m(uri,protocol){
+                connection.onclose = function m(uri, protocol) {
                     console.log("on close");
-                    if (typeof maxTries === 'undefined'){
+                    if (typeof maxTries === 'undefined') {
                         maxTries = 5
-                        };
-                    if (maxTries > 0 ){
-                        console.log("Trying to connect again. "+ maxTries+ " tries left");
+                    }
+                    ;
+                    if (maxTries > 0) {
+                        console.log("Trying to connect again. " + maxTries + " tries left");
                         addOn(--maxTries);
-                    };
+                    }
+                    ;
                 };
             }
-            addOn(connection)
-            function onPrevious(){
-                connection.send(JSON.stringify({'payload':'previous'}));
-            };
-            function search(){
+
+            addOn(connection);
+
+            function onPrevious() {
+                connection.send(JSON.stringify({'payload': 'previous'}));
+            }
+
+            function search() {
                 let q = $("#songSearch").val();
                 $.ajax({
-                    url: "https://api.spotify.com/v1/search?q="+q+"&type=track&limit=5",
+                    url: "https://api.spotify.com/v1/search?q=" + q + "&type=track&limit=5",
                     headers: {
-                       'Authorization': 'Bearer ' + token
+                        'Authorization': 'Bearer ' + token
                     },
-                    success:function(data) {
-                       var songs = data.tracks.items;
-                       for (i of songs) {
-                           let res = '<li><div class="row"><div class="col 4"><img src="'+i.album.images[0].url+'" alt="result" height="32" width="32"></div><div class="col 7"><p>'+i.name+'</p></div><div class="col 1"><button onclick="playURI(\''+i.uri+'\')">Add to Queue<i class="material-icons right">add</i></button></div></div></li>';
-                           $("#songsRes ul").append(res);
-                       }
-                       $('#modal').modal('open');
+                    success: function (data) {
+                        var songs = data.tracks.items;
+                        for (i of songs) {
+                            let res =
+                                '<li>' +
+                                    '<div class="row">' +
+                                        '<div class="col 4">' +
+                                            '<img src="' + i.album.images[0].url + '" alt="result" height="32" width="32">' +
+                                        '</div>' +
+                                        '<div class="col 7">' +
+                                            '<p>' + i.name + '</p>' +
+                                        '</div>' +
+                                        '<div class="col 1">' +
+                                            '<button onclick="playURI(\'' + i.uri + '\')">Add to Queue<i class="material-icons right">add</i></button>' +
+                                        '</div>' +
+                                    '</div>' +
+                                '</li>';
+                            $("#songsRes ul").append(res);
+                        }
+                        $('#modal').modal('open');
                     }
                 });
 
 
             }
-            function onNext(){
-                connection.send(JSON.stringify({'payload':'next'}));
-            };
-            function onPlay(){
-                connection.send(JSON.stringify({'payload':'play'}));
-            };
-            function onQueue(){
-                try{
-                    regex = /(track\/)([0-9A-z]*)/
-                    uri = "spotify:track:"+regex.exec(document.getElementById("song_uri").value)[2]
-                    connection.send(JSON.stringify({'payload':'playUri','uri':uri}));
-                    document.getElementById("song_uri").value = "";
-                }catch(err){
-                    alert("Invalid link or socket error")
-                }
-            };
-            function playURI(uri){
-                connection.send(JSON.stringify({'payload':'playUri','uri':uri}));
+
+            function onNext() {
+                connection.send(JSON.stringify({'payload': 'next'}));
             }
-    </script>
-</body>
+
+            function onPlay() {
+                connection.send(JSON.stringify({'payload': 'play'}));
+            }
+
+            function onQueue() {
+                try {
+                    regex = /(track\/)([0-9A-z]*)/;
+                    uri = "spotify:track:" + regex.exec(document.getElementById("song_uri").value)[2];
+                    connection.send(JSON.stringify({'payload': 'playUri', 'uri': uri}));
+                    document.getElementById("song_uri").value = "";
+                } catch (err) {
+                    alert("Invalid link or socket error");
+                }
+            }
+
+            function playURI(uri) {
+                connection.send(JSON.stringify({'payload': 'playUri', 'uri': uri}));
+            }
+        </script>
+    </body>
 </html>
