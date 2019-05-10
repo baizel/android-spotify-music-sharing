@@ -1,5 +1,5 @@
-/**
- * @Author Baizel Mathew
+/*
+  @Author: Baizel Mathew
  */
 package com.baizelmathew.spotifycontroller.service;
 

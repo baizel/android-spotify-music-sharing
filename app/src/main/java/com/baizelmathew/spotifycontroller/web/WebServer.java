@@ -1,3 +1,6 @@
+/*
+  @Author: Baizel Mathew
+ */
 package com.baizelmathew.spotifycontroller.web;
 
 import com.baizelmathew.spotifycontroller.spotifywrapper.Player;

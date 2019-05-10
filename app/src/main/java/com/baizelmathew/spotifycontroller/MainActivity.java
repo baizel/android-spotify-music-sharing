@@ -1,5 +1,5 @@
-/**
- * @Author: Baizel Mathew
+/*
+  @Author: Baizel Mathew
  */
 package com.baizelmathew.spotifycontroller;
 
@@ -43,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        //Register recived to so the view can be updated with track info and server address
         LocalBroadcastManager.getInstance(this).registerReceiver(
                 new BroadcastReceiver() {
                     @Override
@@ -65,6 +66,7 @@ public class MainActivity extends AppCompatActivity {
 
         broadcastForeGroundService(ForeGroundServerService.ACTION_START_FOREGROUND_SERVICE);
 
+        //Authenticate the Spotify SDk and get token
         AuthenticationRequest.Builder builder =
                 new AuthenticationRequest.Builder(CLIENT_ID, AuthenticationResponse.Type.TOKEN, REDIRECT_URI);
 
@@ -99,6 +101,10 @@ public class MainActivity extends AppCompatActivity {
         broadcastForeGroundService(ForeGroundServerService.ACTION_START_FOREGROUND_SERVICE);
     }
 
+    /**
+     * Starts server
+     * @param action
+     */
     private void broadcastForeGroundService(String action) {
         //start Server
         Intent startForeGroundServiceIntent = new Intent(this, ServiceBroadcastReceiver.class);
@@ -106,11 +112,19 @@ public class MainActivity extends AppCompatActivity {
         sendBroadcast(startForeGroundServiceIntent);
     }
 
+    /**
+     * Updates the server link
+     * @param address
+     */
     private void updateLink(String address) {
         TextView link = findViewById(R.id.link);
         link.setText(address);
     }
 
+    /**
+     * Updates the background image and track info on the app
+     * @param t
+     */
     private void updateInfo(Track t) {
         SpotifyAppRemote remote = Player.getInstance().getSpotifyAppRemote();
 

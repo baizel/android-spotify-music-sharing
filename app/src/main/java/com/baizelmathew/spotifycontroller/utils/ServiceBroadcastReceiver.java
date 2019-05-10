@@ -1,3 +1,6 @@
+/*
+  @Author: Baizel Mathew
+ */
 package com.baizelmathew.spotifycontroller.utils;
 
 import android.content.Context;
