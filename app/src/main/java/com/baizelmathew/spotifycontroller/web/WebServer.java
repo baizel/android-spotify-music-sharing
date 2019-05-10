@@ -129,6 +129,7 @@ public class WebServer extends NanoHTTPD {
     /**
      * Get ip addres of the current device
      * Code from StackOverflow
+     * https://stackoverflow.com/questions/6064510/how-to-get-ip-address-of-the-device-from-code
      * @param useIPv4
      * @return
      */
