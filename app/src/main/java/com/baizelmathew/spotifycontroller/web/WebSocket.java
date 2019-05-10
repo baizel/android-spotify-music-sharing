@@ -13,7 +13,13 @@ import org.java_websocket.server.WebSocketServer;
 
 import java.net.InetSocketAddress;
 
-public class WebSocket extends WebSocketServer {
+/**
+ * Package protected Web socket class.
+ * Can only be accessed by the web server.
+ * it can connect, send and receive messages from different clients.
+ * Can also register callbacks so any message received can be passed forward
+ */
+class WebSocket extends WebSocketServer {
     private static String TAG = "MySocket";
 
     private String wsAddress;
@@ -35,6 +41,9 @@ public class WebSocket extends WebSocketServer {
         return this;
     }
 
+    /**
+     * broadcasts the state of the of the spotify player when update occurs
+     */
     public void startListiningToState(){
         Player player = Player.getInstance();
         player.getSpotifyAppRemote().getPlayerApi().subscribeToPlayerState().setEventCallback(new Subscription.EventCallback<PlayerState>() {
@@ -78,6 +87,9 @@ public class WebSocket extends WebSocketServer {
 
     }
 
+    /**
+     * Broadcasts the state to anything listing
+     */
     private void broadcastState() {
         Player m = Player.getInstance();
         m.getPlayerState(new OnEventCallback() {

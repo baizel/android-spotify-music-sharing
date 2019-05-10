@@ -1,3 +1,6 @@
+/**
+ * @Author Baizel Mathew
+ */
 package com.baizelmathew.spotifycontroller.service;
 
 import android.app.Notification;
@@ -29,9 +32,10 @@ import com.spotify.protocol.types.Track;
 
 import java.io.IOException;
 
-
+/**
+ * This class is responsible for managing the web server in the background.
+ */
 public class ForeGroundServerService extends Service {
-
 
     public static final String ACTION_STOP_FOREGROUND_SERVICE = "ACTION_STOP_FOREGROUND_SERVICE";
     public static final String ACTION_START_FOREGROUND_SERVICE = "ACTION_START_FOREGROUND_SERVICE";
@@ -58,6 +62,12 @@ public class ForeGroundServerService extends Service {
         toast.show();
     }
 
+    /**
+     * Method used to broadcast the web server address to anything listening.
+     * Used to retrieve the web server address by the main activity so it can be updated
+     * and shown to the user when the server is launched.
+     * @param serverLink as a http link
+     */
     private void sendBroadcastAddress(String serverLink) {
         if (serverLink != null) {
             Intent intent = new Intent(ACTION_SERVER_ADDRESS_BROADCAST);
@@ -66,6 +76,10 @@ public class ForeGroundServerService extends Service {
         }
     }
 
+    /**
+     * Same as sendBroadcastAddress but for current song information.
+     * @param track See Spotify track object
+     */
     private void sendBroadcastTrack(Track track) {
         if (track != null) {
             Intent intent = new Intent(ACTION_TRACK_BROADCAST);
@@ -74,9 +88,14 @@ public class ForeGroundServerService extends Service {
         }
     }
 
+    /**
+     * Creates a foreground service with always displaying notification on the channel
+     * com.baizelmathew.mobiledev
+     * The notification has the option to stop the server by using the button
+     */
     private void startMyOwnForeground() {
         String NOTIFICATION_CHANNEL_ID = "com.baizelmathew.mobiledev";
-        String channelName = "My Background Service";
+        String channelName = "Spotify Web Server";
 
         NotificationChannel chan = new NotificationChannel(NOTIFICATION_CHANNEL_ID, channelName, NotificationManager.IMPORTANCE_NONE);
         chan.setLightColor(Color.BLUE);
@@ -100,12 +119,16 @@ public class ForeGroundServerService extends Service {
                 .setContentTitle("Server running in background")
                 .setPriority(NotificationManager.IMPORTANCE_LOW)
                 .setCategory(Notification.CATEGORY_SERVICE)
-                .addAction(R.drawable.ic_stop_black_24dp, "Kill Server", stopPendingIntent)
+                .addAction(R.drawable.ic_stop_black_24dp, "Stop Server", stopPendingIntent)
                 .build();
 
         startForeground(ONGOING_NOTIFICATION_ID, notification);
     }
 
+    /**
+     * Initialises the web server and registers the stop service receiver.
+     * Also connects Spotify SDK to client.
+     */
     @Override
     public void onCreate() {
         super.onCreate();
@@ -128,7 +151,6 @@ public class ForeGroundServerService extends Service {
                 try {
                     webServer.startServer();
                 } catch (IOException e) {
-                    //TODO: pass this on to activity
                     e.printStackTrace();
                     stopSelf();
                 }
@@ -149,7 +171,6 @@ public class ForeGroundServerService extends Service {
 
             @Override
             public void onFailure(Throwable throwable) {
-                //TODO: pass this on to activity
                 stopSelf();
                 debugToast("Service Not Started " + throwable.getLocalizedMessage());
             }
@@ -158,23 +179,38 @@ public class ForeGroundServerService extends Service {
         player.connect(this, connectionListener, playerStateEventCallback);
     }
 
+    /**
+     * Required for Service classes
+     * @param intent
+     * @return
+     */
     @Override
     public IBinder onBind(Intent intent) {
         return null;
     }
 
+    /**
+     * Required for Service classes
+     * @param intent
+     * @param flags
+     * @param startId
+     * @return
+     */
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         return super.onStartCommand(intent, flags, startId);
     }
 
+    /**
+     * Kills the server and disconnects Spotify when service is killed.
+     */
     @Override
     public void onDestroy() {
         super.onDestroy();
         webServer.stop();
         player.disconnect();
         this.unregisterReceiver(serviceBroadcastReceiver);
-        debugToast("KILLED ALL ");
+        debugToast("Stopping Web Server ");
 
     }
 

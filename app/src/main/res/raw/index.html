@@ -150,7 +150,7 @@
                                             '<p>' + i.name + '</p>' +
                                         '</div>' +
                                         '<div class="col 1">' +
-                                            '<button onclick="playURI(\'' + i.uri + '\')">Add to Queue<i class="material-icons right">add</i></button>' +
+                                            '<a href="#" onclick="playURI(\'' + i.uri + '\')" >Add to Queue<i  class="material-icons right">add</i></a>' +
                                         '</div>' +
                                     '</div>' +
                                 '</li>';
@@ -184,6 +184,7 @@
 
             function playURI(uri) {
                 connection.send(JSON.stringify({'payload': 'playUri', 'uri': uri}));
+                 $('#modal').modal('close');
             }
         </script>
     </body>

@@ -1,5 +1,8 @@
 package com.baizelmathew.spotifycontroller.web;
 
+/**
+ * Helper class for callbacks
+ */
 public interface WebSocketCallback {
     void onClose(org.java_websocket.WebSocket conn, int code, String reason, boolean remote);
 

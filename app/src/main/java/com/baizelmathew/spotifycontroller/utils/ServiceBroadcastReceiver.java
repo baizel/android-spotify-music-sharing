@@ -9,6 +9,9 @@ import com.baizelmathew.spotifycontroller.web.WebServer;
 
 import java.util.Objects;
 
+/**
+ * Helper class to stop and start services
+ */
 public class ServiceBroadcastReceiver extends android.content.BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
