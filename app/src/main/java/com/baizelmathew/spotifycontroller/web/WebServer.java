@@ -18,12 +18,15 @@ import java.util.List;
 
 import fi.iki.elonen.NanoHTTPD;
 
+/**
+ * Singleton class that hosts the web server
+ */
 public class WebServer extends NanoHTTPD {
 
     private static final int HTTP_PORT = 8080;
     private static final int SOCKET_PORT = 6969;
-    private static final String PLAY_ARROW = "play_arrow";
-    private static final String pause = "pause";
+    private static final String PLAY_ARROW = "play_arrow"; // Icons name in HTML
+    private static final String PAUSE = "PAUSE";// Icons name in HTML
 
     private static boolean isIpv4 = true;
     private static String httpAddress;
@@ -42,20 +45,30 @@ public class WebServer extends NanoHTTPD {
         }
         return server;
     }
-    public void startListinig(){
+
+    /**
+     * Starts listening to any changes broadcasted by the Spotify SDK
+     */
+    public void startListinig() {
         webSocket.startListiningToState();
     }
+
+    /**
+     * Creates the web server instance and stores in the static variable server.
+     * This also handles a ny incoming web socket requests
+     */
     private WebServer() {
         super(getIPAddress(isIpv4), HTTP_PORT);
         String ipAddress = getIPAddress(isIpv4);
 
         httpAddress = "http://" + ipAddress + ":" + HTTP_PORT;
+        //Calls back to handle incoming requests
         webSocket = new WebSocket(ipAddress, SOCKET_PORT).registerCallback(new WebSocketCallback() {
             @Override
             public void onClose(org.java_websocket.WebSocket conn, int code, String reason, boolean remote) {
 
             }
-
+            //The payloads are defined in the HTML page
             @Override
             public void onMessage(org.java_websocket.WebSocket conn, String message) {
                 if (!isIncomingPaused) {
@@ -91,7 +104,7 @@ public class WebServer extends NanoHTTPD {
 
             @Override
             public void onError(org.java_websocket.WebSocket conn, Exception ex) {
-
+                //ignore it nothing needed
             }
         });
     }
@@ -110,6 +123,12 @@ public class WebServer extends NanoHTTPD {
 
     }
 
+    /**
+     * Get ip addres of the current device
+     * Code from StackOverflow
+     * @param useIPv4
+     * @return
+     */
     private static String getIPAddress(boolean useIPv4) {
         try {
             List<NetworkInterface> interfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
@@ -133,7 +152,6 @@ public class WebServer extends NanoHTTPD {
                 }
             }
         } catch (Exception ignored) {
-            //TODO: handle error.
         }
         return null;
     }
@@ -142,10 +160,17 @@ public class WebServer extends NanoHTTPD {
         return httpAddress;
     }
 
+    /**
+     * The response to any request for a webpage
+     * If the Data injector fails here then a fall back page will b returned
+     * @param session
+     * @return
+     */
     @Override
     public Response serve(IHTTPSession session) {
+        //Dta to be injected into the page
         HashMap<String, String> data = new HashMap<>();
-        data.put("token",Player.getAccessToken());
+        data.put("token", Player.getAccessToken());
         data.put("PlayIcon", PLAY_ARROW);
         data.put("SongName", "Loading..");
         data.put("SongDescription", "Loading..");
@@ -166,6 +191,9 @@ public class WebServer extends NanoHTTPD {
         return newFixedLengthResponse(page);
     }
 
+    /**
+     * Kill all servers and reset instance variables
+     */
     @Override
     public void stop() {
         super.stop();

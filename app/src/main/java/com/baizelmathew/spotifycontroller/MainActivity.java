@@ -1,3 +1,6 @@
+/**
+ * @Author: Baizel Mathew
+ */
 package com.baizelmathew.spotifycontroller;
 
 import android.content.BroadcastReceiver;
@@ -28,8 +31,14 @@ import static com.baizelmathew.spotifycontroller.spotifywrapper.Player.CLIENT_ID
 import static com.baizelmathew.spotifycontroller.spotifywrapper.Player.REDIRECT_URI;
 import static com.baizelmathew.spotifycontroller.spotifywrapper.Player.REQUEST_CODE;
 
+/**
+ * MainActivity shown to user
+ */
 public class MainActivity extends AppCompatActivity {
-
+    /**
+     * Creats the view and starts the foreground service
+     * @param savedInstanceState
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -77,13 +86,6 @@ public class MainActivity extends AppCompatActivity {
                 case TOKEN:
                    Player.setAccessToken(response.getAccessToken());
                     break;
-
-                // Auth flow returned an error
-                case ERROR:
-                    // Handle error response
-                    break;
-
-                // Most likely auth flow was cancelled
                 default:
                     // Handle other cases
             }

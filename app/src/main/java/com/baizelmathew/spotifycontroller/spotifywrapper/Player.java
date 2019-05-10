@@ -12,10 +12,14 @@ import com.spotify.protocol.client.CallResult;
 import com.spotify.protocol.client.Subscription;
 import com.spotify.protocol.types.PlayerState;
 
+/**
+ * calss to interface wit the Spotify SDK
+ * Uses authorisation sdk to get access token that can be used on the web page
+ */
 public class Player {
     public static final int REQUEST_CODE = 1337;
     public static final String REDIRECT_URI = "https://www.baizelmathew.com/callback";
-    private static final String TAG = "Spotify"; // TODO: add this to class in utils
+    private static final String TAG = "Spotify";
     public static final String CLIENT_ID = "05e5055c73a74eb8b8f536e3a2e5a3ac";
     private static ConnectionParams connectionParams = null;
     private static Player instance = null;
@@ -53,10 +57,13 @@ public class Player {
         return instance;
     }
 
-    public void connect(Context context, final Connector.ConnectionListener callback) {
-        connect(context, callback, null);
-    }
-
+    /**
+     * Connects to Spotify if there has not already been a connection made.
+     * Aftter connecting the SpotifyAppRemote will be pased can now register callback for updates on he app
+     * @param context
+     * @param callback
+     * @param playerStateEventCallback
+     */
     public void connect(Context context, final Connector.ConnectionListener callback, final Subscription.EventCallback<PlayerState> playerStateEventCallback) {
         if (mSpotifyAppRemote == null || !mSpotifyAppRemote.isConnected()) {
             SpotifyAppRemote.connect(context, connectionParams,
@@ -66,6 +73,7 @@ public class Player {
                         public void onConnected(SpotifyAppRemote spotifyAppRemote) {
                             //Set spotify remote
                             mSpotifyAppRemote = spotifyAppRemote;
+                            //Subscribe to any player events such as music change
                             Subscription<PlayerState> subscription = mSpotifyAppRemote.getPlayerApi().subscribeToPlayerState();
                             subscription.setEventCallback(new Subscription.EventCallback<PlayerState>() {
                                 @Override
