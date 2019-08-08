@@ -105,7 +105,11 @@
 </html>
 <script>
             $(document).ready(function () {
-                $('#modal').modal();
+                $('#modal').modal({
+                    onCloseEnd: function() {
+                        $("#songsRes ul").empty();
+                    }
+                });
             });
             var socket = "{{socket}}";
             var token = "{{token}}"
@@ -174,6 +178,7 @@
 
                             $("#songsRes ul").append(res);
                         }
+                        songs = [];
                         $('#modal').modal('open');
                     }
                 });

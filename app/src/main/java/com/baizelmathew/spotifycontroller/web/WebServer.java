@@ -130,6 +130,7 @@ public class WebServer extends NanoHTTPD {
      * Get ip addres of the current device
      * Code from StackOverflow
      * https://stackoverflow.com/questions/6064510/how-to-get-ip-address-of-the-device-from-code
+     *
      * @param useIPv4
      * @return
      */
@@ -167,6 +168,7 @@ public class WebServer extends NanoHTTPD {
     /**
      * The response to any request for a webpage
      * If the Data injector fails here then a fall back page will b returned
+     *
      * @param session
      * @return
      */
@@ -202,11 +204,11 @@ public class WebServer extends NanoHTTPD {
     public void stop() {
         super.stop();
         try {
-            webSocket.stop();
+            if (webSocket != null) {
+                webSocket.stop(3000);
+            }
             webSocket = null;
             server = null;
-        } catch (IOException e) {
-            e.printStackTrace();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
