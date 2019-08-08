@@ -10,6 +10,10 @@
     h2 {
         color: white;
     }
+    img.albumCover {
+        width:  15%;
+        height: 15%;
+    }
 </style>
     <head>
         <meta charset="UTF-8">
@@ -79,23 +83,27 @@
                 </div>
             </div>
             <div class="row">
-                <div class="col s12">
-                    <div class="card-panel grey darken-1">
-                        <div class="card-content white-text center">
-                            <h5 id="SongName" class="card-title">{{ SongName }}</h5>
-                            <h6 id="SongDescription">{{ SongDescription }}</h6>
-                        </div>
-                        <div class="card-action center">
-                            <a class="btn-large waves-effect waves-light grey darken-3" onclick="onPrevious()"><i class="white-text medium material-icons">skip_previous</i></a>
-                            <a class="btn-large waves-effect waves-light grey darken-3" onclick="onPlay()"><i class="white-text medium material-icons" id="PlayIcon">play_arrow</i></a>
-                            <a class="btn-large waves-effect waves-light grey darken-3" onclick="onNext()"><i class="white-text medium material-icons">skip_next</i></a>
+                <div class="container">
+                    <div class="col s12">
+                        <div class="card-panel grey darken-1">
+                            <div class="card-content white-text center">
+                                <h5 id="SongName" class="card-title">{{ SongName }}</h5>
+                                <h6 id="SongDescription">{{ SongDescription }}</h6>
+                            </div>
+                            <div class="card-action center">
+                                <a class="btn-large waves-effect waves-light grey darken-3" onclick="onPrevious()"><i class="white-text medium material-icons">skip_previous</i></a>
+                                <a class="btn-large waves-effect waves-light grey darken-3" onclick="onPlay()"><i class="white-text medium material-icons" id="PlayIcon">play_arrow</i></a>
+                                <a class="btn-large waves-effect waves-light grey darken-3" onclick="onNext()"><i class="white-text medium material-icons">skip_next</i></a>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-beta/js/materialize.min.js"></script>
-        <script>
+    </body>
+</html>
+<script>
             $(document).ready(function () {
                 $('#modal').modal();
             });
@@ -142,20 +150,28 @@
                     success: function (data) {
                         var songs = data.tracks.items;
                         for (i of songs) {
+                            console.log(i);
                             let res =
-                                '<li>' +
-                                    '<div class="row">' +
-                                        '<div class="col 4">' +
-                                            '<img src="' + i.album.images[0].url + '" alt="result" height="32" width="32">' +
-                                        '</div>' +
-                                        '<div class="col 7">' +
-                                            '<p>' + i.name + '</p>' +
-                                        '</div>' +
-                                        '<div class="col 1">' +
-                                            '<a href="#" onclick="playURI(\'' + i.uri + '\')" >Add to Queue<i  class="material-icons right">add</i></a>' +
-                                        '</div>' +
-                                    '</div>' +
+                            '<li>' +
+                                '<div class="row">' +
+                                '    <div class="card horizontal grey">' +
+                                '      <div class="card-image">' +
+                                '        <img src="' + i.album.images[0].url + '" alt="result" height="128">' +
+                                '      </div>' +
+                                '      <div class="card-stacked">' +
+                                '        <div class="card-content">' +
+                                '          <p>' + i.name + ' by ' + i.artists[0].name +'</p>' +
+                                '        </div>' +
+                                '        <div class="card-action black-text">' +
+                                '           <a href="#" onclick="playURI(\'' + i.uri + '\')" >Add to Queue<i  class="material-icons right">add</i></a>' +
+                                '        </div>' +
+                                '      </div>' +
+                                '    </div>' +
+                                '  </div>' +
+                                '</div>' +
                                 '</li>';
+
+
                             $("#songsRes ul").append(res);
                         }
                         $('#modal').modal('open');
@@ -189,5 +205,3 @@
                  $('#modal').modal('close');
             }
         </script>
-    </body>
-</html>
