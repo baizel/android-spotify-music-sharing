@@ -29,8 +29,10 @@ public class Player {
     private static SpotifyAppRemote mSpotifyAppRemote = null;
     private String initialPlayerState = null;
     private static String accessToken = null;
+    private static UserQueue q = null;
 
     private Player() {
+        q = new UserQueue();
         connectionParams = new ConnectionParams.Builder(CLIENT_ID)
                 .setRedirectUri(REDIRECT_URI)
                 .showAuthView(true)

@@ -52,7 +52,7 @@ public class WebServer extends NanoHTTPD {
     /**
      * Starts listening to any changes broadcasted by the Spotify SDK
      */
-    public void startListinig() {
+    public void startListening() {
         webSocket.startListiningToState();
     }
 

@@ -160,7 +160,7 @@ public class ForeGroundServerService extends Service {
         Connector.ConnectionListener connectionListener = new Connector.ConnectionListener() {
             @Override
             public void onConnected(SpotifyAppRemote spotifyAppRemote) {
-                webServer.startListinig();
+                webServer.startListening();
                 player.getPlayerState(new OnEventCallback() {
                     @Override
                     public void onEvent(PlayerState playerState) {
