@@ -3,6 +3,8 @@
  */
 package com.baizelmathew.spotifycontroller.web;
 
+import android.util.Log;
+
 import com.baizelmathew.spotifycontroller.spotifywrapper.Player;
 import com.baizelmathew.spotifycontroller.utils.DataInjector;
 import com.baizelmathew.spotifycontroller.utils.FallbackErrorPage;
@@ -79,6 +81,9 @@ public class WebServer extends NanoHTTPD {
                         final Player player = Player.getInstance();
                         JSONObject msg = new JSONObject(message);
                         switch (msg.getString("payload")) {
+                            case "plsrespond":
+                                Log.d("ATAG","YAYAYAYAYAYYAYA");
+                                conn.send("is this working");
                             case "next":
                                 player.getSpotifyAppRemote().getPlayerApi().skipNext();
                                 break;
