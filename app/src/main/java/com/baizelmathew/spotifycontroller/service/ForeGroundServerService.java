@@ -198,7 +198,8 @@ public class ForeGroundServerService extends Service {
      */
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        return super.onStartCommand(intent, flags, startId);
+        super.onStartCommand(intent, flags, startId);
+        return START_STICKY;
     }
 
     /**
@@ -207,8 +208,8 @@ public class ForeGroundServerService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        webServer.stop();
         player.disconnect();
+        webServer.stop();
         this.unregisterReceiver(serviceBroadcastReceiver);
         debugToast("Stopping Web Server ");
 
