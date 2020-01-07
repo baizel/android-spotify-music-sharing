@@ -4,6 +4,7 @@
 package com.baizelmathew.spotifycontroller.spotifywrapper;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.util.Log;
 
 import com.baizelmathew.spotifycontroller.utils.OnEventCallback;
@@ -13,7 +14,10 @@ import com.spotify.android.appremote.api.Connector;
 import com.spotify.android.appremote.api.SpotifyAppRemote;
 import com.spotify.protocol.client.CallResult;
 import com.spotify.protocol.client.Subscription;
+import com.spotify.protocol.types.Empty;
+import com.spotify.protocol.types.Image;
 import com.spotify.protocol.types.PlayerState;
+import com.spotify.protocol.types.Track;
 
 /**
  * calss to interface wit the Spotify SDK
@@ -65,6 +69,7 @@ public class Player {
     /**
      * Connects to Spotify if there has not already been a connection made.
      * Aftter connecting the SpotifyAppRemote will be pased can now register callback for updates on he app
+     *
      * @param context
      * @param callback
      * @param playerStateEventCallback
@@ -101,15 +106,39 @@ public class Player {
                     });
         }
 
-
     }
 
     public void disconnect() {
         SpotifyAppRemote.disconnect(mSpotifyAppRemote);
     }
 
-    public SpotifyAppRemote getSpotifyAppRemote() {
-        return mSpotifyAppRemote;
+
+    public void getImageOfTrack(Track t, CallResult.ResultCallback<Bitmap> callback) {
+
+        mSpotifyAppRemote.getImagesApi()
+                .getImage(t.imageUri, Image.Dimension.LARGE)
+                .setResultCallback(callback);
+    }
+
+    public CallResult<Empty> nextTrack() {
+        return mSpotifyAppRemote.getPlayerApi().skipNext();
+    }
+
+    public CallResult<Empty> previousTrack() {
+        return mSpotifyAppRemote.getPlayerApi().skipPrevious();
+    }
+
+    public CallResult<Empty> pause() {
+        return mSpotifyAppRemote.getPlayerApi().pause();
+    }
+
+    public CallResult<Empty> resume() {
+        return mSpotifyAppRemote.getPlayerApi().resume();
+    }
+
+    public CallResult<Empty> addToQueue(String uri) {
+        q.addToQueue(uri);
+        return mSpotifyAppRemote.getPlayerApi().queue(uri);
     }
 
     public void getPlayerState(final OnEventCallback callback) {
@@ -119,6 +148,14 @@ public class Player {
                 callback.onEvent(playerState);
             }
         });
+    }
+
+    public void subscribeToPlayerState(Subscription.EventCallback<PlayerState> callback){
+        mSpotifyAppRemote.getPlayerApi().subscribeToPlayerState().setEventCallback(callback);
+    }
+
+    public UserQueue getCustomQueue(){
+        return q;
     }
 
 }

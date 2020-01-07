@@ -8,6 +8,8 @@ import android.util.Log;
 import com.baizelmathew.spotifycontroller.spotifywrapper.Player;
 import com.baizelmathew.spotifycontroller.utils.OnEventCallback;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.spotify.protocol.client.Subscription;
 import com.spotify.protocol.types.PlayerState;
 
@@ -47,17 +49,16 @@ class WebSocket extends WebSocketServer {
     /**
      * broadcasts the state of the of the spotify player when update occurs
      */
-    public void startListiningToState(){
+    public void startListiningToState() {
         Player player = Player.getInstance();
-        player.getSpotifyAppRemote().getPlayerApi().subscribeToPlayerState().setEventCallback(new Subscription.EventCallback<PlayerState>() {
+        player.subscribeToPlayerState(new Subscription.EventCallback<PlayerState>() {
             @Override
             public void onEvent(PlayerState playerState) {
-                String state = new Gson().toJson(playerState);
-                broadcast(state);
-                Log.d(TAG, "broadcast state " + state);
+                initiateBroadCastOfState(playerState);
             }
         });
     }
+
     @Override
     public void onOpen(org.java_websocket.WebSocket conn, ClientHandshake handshake) {
         Log.d(TAG, "new connection to " + conn.getRemoteSocketAddress());
@@ -98,11 +99,17 @@ class WebSocket extends WebSocketServer {
         m.getPlayerState(new OnEventCallback() {
             @Override
             public void onEvent(PlayerState playerState) {
-                String state = new Gson().toJson(playerState);
-                broadcast(state);
-                Log.d(TAG, "broadcast state " + state);
+                initiateBroadCastOfState(playerState);
             }
         });
+    }
+
+    public void initiateBroadCastOfState(PlayerState playerState) {
+        Log.d(TAG, "Start broadcast state");
+        JsonElement json = new Gson().toJsonTree(playerState);
+        json.getAsJsonObject().addProperty("queue", new Gson().toJson(Player.getInstance().getCustomQueue().getqueue()));
+        broadcast(json.toString());
+        Log.d(TAG, "broadcast state " + json.toString());
     }
 
 }
