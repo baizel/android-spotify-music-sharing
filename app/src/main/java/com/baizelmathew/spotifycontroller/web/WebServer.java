@@ -3,10 +3,15 @@
  */
 package com.baizelmathew.spotifycontroller.web;
 
+import android.content.Intent;
+import android.util.Log;
+
+import com.baizelmathew.spotifycontroller.service.ForeGroundServerService;
 import com.baizelmathew.spotifycontroller.spotifywrapper.Player;
 import com.baizelmathew.spotifycontroller.utils.DataInjector;
 import com.baizelmathew.spotifycontroller.utils.FallbackErrorPage;
 import com.baizelmathew.spotifycontroller.utils.OnEventCallback;
+import com.baizelmathew.spotifycontroller.utils.ServiceBroadcastReceiver;
 import com.spotify.protocol.types.PlayerState;
 
 import org.json.JSONException;
@@ -79,25 +84,27 @@ public class WebServer extends NanoHTTPD {
                         final Player player = Player.getInstance();
                         JSONObject msg = new JSONObject(message);
                         switch (msg.getString("payload")) {
+                            case "plsrespond":
+                                conn.send("is this working");
                             case "next":
-                                player.getSpotifyAppRemote().getPlayerApi().skipNext();
+                                player.nextTrack();
                                 break;
                             case "previous":
-                                player.getSpotifyAppRemote().getPlayerApi().skipPrevious();
+                                player.previousTrack();
                                 break;
                             case "play":
                                 player.getPlayerState(new OnEventCallback() {
                                     @Override
                                     public void onEvent(PlayerState playerState) {
                                         if (playerState.isPaused)
-                                            player.getSpotifyAppRemote().getPlayerApi().resume();
+                                            player.resume();
                                         else
-                                            player.getSpotifyAppRemote().getPlayerApi().pause();
+                                            player.pause();
                                     }
                                 });
                             case "playUri":
                                 String uri = msg.getString("uri");
-                                player.getSpotifyAppRemote().getPlayerApi().queue(uri);
+                                player.addToQueue(uri);
                         }
                     } catch (JSONException e) {
                         e.printStackTrace();
@@ -107,7 +114,12 @@ public class WebServer extends NanoHTTPD {
 
             @Override
             public void onError(org.java_websocket.WebSocket conn, Exception ex) {
-                //ignore it nothing needed
+                if (conn != null)
+                    conn.close();
+                httpAddress = "Error Starting WebSocket: "+ ex.getLocalizedMessage();
+                //TODO: Stop Service
+//                stop();
+
             }
         });
     }

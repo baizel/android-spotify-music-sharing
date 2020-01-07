@@ -3,16 +3,17 @@ package com.baizelmathew.spotifycontroller.spotifywrapper;
 import com.spotify.protocol.types.Track;
 
 import java.util.LinkedList;
+import java.util.List;
 
 public class UserQueue {
-    private LinkedList<Track> queue = new LinkedList<>();
+    private LinkedList<String> queue = new LinkedList<>();
     private int currentPosition = 0;
 
     public UserQueue() {
 
     }
 
-    public Track updatePosAndGetNextTrack(){
+    public String updatePosAndGetNextTrackUri(){
         currentPosition++;
         if (queue.size() > currentPosition){
             return queue.get(currentPosition);
@@ -23,7 +24,7 @@ public class UserQueue {
 
     }
 
-    public Track updatePosAndGePreviousTrack(){
+    public String updatePosAndGePreviousTrackUri(){
         currentPosition--;
         if (currentPosition > 0){
             return queue.get(currentPosition);
@@ -34,11 +35,15 @@ public class UserQueue {
 
     }
 
-    public void addToQueue(Track t){
-        queue.add(t);
+    public void addToQueue(String uri){
+        queue.add(uri);
     }
 
-    public void remove(Track t){
-        queue.remove(t);
+    public void remove(String uri){
+        queue.remove(uri);
+    }
+
+    public List<String> getqueue() {
+        return queue;
     }
 }

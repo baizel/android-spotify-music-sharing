@@ -126,10 +126,9 @@ public class MainActivity extends AppCompatActivity {
      * @param t
      */
     private void updateInfo(Track t) {
-        SpotifyAppRemote remote = Player.getInstance().getSpotifyAppRemote();
 
         if (t != null) {
-            remote.getImagesApi().getImage(t.imageUri, Image.Dimension.LARGE).setResultCallback(new CallResult.ResultCallback<Bitmap>() {
+            Player.getInstance().getImageOfTrack(t,new CallResult.ResultCallback<Bitmap>() {
                 @Override
                 public void onResult(Bitmap bitmap) {
                     BlurImageView img = findViewById(R.id.image);
