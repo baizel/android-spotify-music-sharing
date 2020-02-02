@@ -31,9 +31,9 @@ public class Player {
     private static ConnectionParams connectionParams = null;
     private static Player instance = null;
     private static SpotifyAppRemote mSpotifyAppRemote = null;
-    private String initialPlayerState = null;
     private static String accessToken = null;
     private static UserQueue q = null;
+    private String initialPlayerState = null;
 
     private Player() {
         q = new UserQueue();
@@ -78,7 +78,6 @@ public class Player {
         if (mSpotifyAppRemote == null || !mSpotifyAppRemote.isConnected()) {
             SpotifyAppRemote.connect(context, connectionParams,
                     new Connector.ConnectionListener() {
-
                         @Override
                         public void onConnected(SpotifyAppRemote spotifyAppRemote) {
                             //Set spotify remote
@@ -88,6 +87,7 @@ public class Player {
                             subscription.setEventCallback(new Subscription.EventCallback<PlayerState>() {
                                 @Override
                                 public void onEvent(PlayerState playerState) {
+                                    q.onPlayerState(playerState);
                                     Gson g = new Gson();
                                     updatePlayerState(g.toJson(playerState));
                                     playerStateEventCallback.onEvent(playerState);
@@ -111,7 +111,6 @@ public class Player {
     public void disconnect() {
         SpotifyAppRemote.disconnect(mSpotifyAppRemote);
     }
-
 
     public void getImageOfTrack(Track t, CallResult.ResultCallback<Bitmap> callback) {
 
@@ -150,11 +149,11 @@ public class Player {
         });
     }
 
-    public void subscribeToPlayerState(Subscription.EventCallback<PlayerState> callback){
+    public void subscribeToPlayerState(Subscription.EventCallback<PlayerState> callback) {
         mSpotifyAppRemote.getPlayerApi().subscribeToPlayerState().setEventCallback(callback);
     }
 
-    public UserQueue getCustomQueue(){
+    public UserQueue getCustomQueue() {
         return q;
     }
 

@@ -24,8 +24,10 @@ public class ServiceBroadcastReceiver extends android.content.BroadcastReceiver 
                 break;
             case ForeGroundServerService.ACTION_START_FOREGROUND_SERVICE:
                 startForeGroundService(context);
+                break;
             case WebServer.ACTION_PAUSE_ALL_INCOMING_REQUEST:
                 WebServer.setIncomingPaused(intent.getBooleanExtra(WebServer.EXTRA_PAUSE_INCOMING_REQUEST_STATE,false));
+                break;
             default:
                 break;
         }
