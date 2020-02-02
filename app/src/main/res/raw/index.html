@@ -50,7 +50,8 @@
             </ul>
         </div>
         <div class="container">
-            <div id="conStatusBar" class="col row s12 center red lighten-3 black-text"><b>Connection to Server Status</b></div>
+            <div id="conStatusBar" class="col row s12 center red lighten-3 black-text"><b><span id="conStatusBarMsg">Connected to Server</span></b>
+            </div>
         </div>
         <div id="add" class="col s12 white-text">
             <div class="container">
@@ -188,23 +189,28 @@
             ele.classList.remove("green");
             ele.classList.add("red");
 
-            if (typeof maxTries === 'undefined') {
-                maxTries = 5
+            console.log("Max tries " + maxTries);
+            if (maxTries >= 0) {
+                setTimeout(function () {
+                    document.getElementById("conStatusBarMsg").innerText = "Trying to reconnect..." + maxTries + " tries left";
+                    console.log("Trying to connect again. " + maxTries + " tries left");
+                    addOn(--maxTries);
+                }, 1000);
             }
-            if (maxTries > 0) {
-                console.log("Trying to connect again. " + maxTries + " tries left");
-                addOn(--maxTries);
-            }
+
+
         };
         connection.onopen = function (event) {
+            maxTries = 10;
             let ele = document.getElementById("conStatusBar");
             ele.classList.remove("red");
-            ele.classList.add("green")
+            ele.classList.add("green");
+            document.getElementById("conStatusBarMsg").innerText = "Connected to server";
 
         };
     }
 
-    addOn(connection);
+    addOn(5);
 
     function onPrevious() {
         connection.send(JSON.stringify({'payload': 'previous'}));
