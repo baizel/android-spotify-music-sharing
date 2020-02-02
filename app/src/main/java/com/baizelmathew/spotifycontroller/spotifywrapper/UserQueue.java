@@ -1,5 +1,8 @@
 package com.baizelmathew.spotifycontroller.spotifywrapper;
 
+import android.util.Log;
+
+import com.spotify.protocol.types.PlayerState;
 import com.spotify.protocol.types.Track;
 
 import java.util.LinkedList;
@@ -8,42 +11,32 @@ import java.util.List;
 public class UserQueue {
     private LinkedList<String> queue = new LinkedList<>();
     private int currentPosition = 0;
+    private final static int Q_DISPLAY_BUFFER = 1;
 
     public UserQueue() {
 
     }
 
-    public String updatePosAndGetNextTrackUri(){
-        currentPosition++;
-        if (queue.size() > currentPosition){
-            return queue.get(currentPosition);
-        } else {
-            currentPosition = queue.size() -1;
-        }
-        return null;
-
+    public int getCurrentPosition() {
+        return currentPosition;
     }
 
-    public String updatePosAndGePreviousTrackUri(){
-        currentPosition--;
-        if (currentPosition > 0){
-            return queue.get(currentPosition);
-        } else {
-            currentPosition = 0;
+    public void onPlayerState(PlayerState ps) {
+        String currentTrack = ps.track.uri;
+        if (queue.indexOf(currentTrack) >= 0) {
+            remove(currentTrack);
         }
-        return null;
-
     }
 
-    public void addToQueue(String uri){
+    public void addToQueue(String uri) {
         queue.add(uri);
     }
 
-    public void remove(String uri){
+    public void remove(String uri) {
         queue.remove(uri);
     }
 
-    public List<String> getqueue() {
+    public List<String> getQueue() {
         return queue;
     }
 }

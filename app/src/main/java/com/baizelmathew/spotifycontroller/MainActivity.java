@@ -64,7 +64,6 @@ public class MainActivity extends AppCompatActivity {
                 }, new IntentFilter(ForeGroundServerService.ACTION_SERVER_ADDRESS_BROADCAST)
         );
 
-        broadcastForeGroundService(ForeGroundServerService.ACTION_START_FOREGROUND_SERVICE);
 
         //Authenticate the Spotify SDk and get token
         AuthenticationRequest.Builder builder =
@@ -72,8 +71,9 @@ public class MainActivity extends AppCompatActivity {
 
         builder.setScopes(new String[]{"streaming"});
         AuthenticationRequest request = builder.build();
-
         AuthenticationClient.openLoginActivity(this, REQUEST_CODE, request);
+
+        broadcastForeGroundService(ForeGroundServerService.ACTION_START_FOREGROUND_SERVICE);
 
     }
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {

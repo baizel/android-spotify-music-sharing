@@ -45,14 +45,16 @@
 
         <div class="col s12 " style="padding-bottom: 10px;">
             <ul class="tabs grey darken-2 white-text">
-                <li class="tab col s6 white-text"><a class="active" href="#add">Add Music</a></li>
-                <li class="tab col s6 white-text"><a href="#queue">Current Track</a></li>
+                <li class="tab col s6 white-text"><a class="active" href="#add">Add More</a></li>
+                <li class="tab col s6 white-text"><a href="#queue">Up Next</a></li>
             </ul>
+        </div>
+        <div class="container">
+            <div id="conStatusBar" class="col row s12 center red lighten-3 black-text"><b>Connection to Server Status</b></div>
         </div>
         <div id="add" class="col s12 white-text">
             <div class="container">
-
-                <div class="center row z-depth-2 grey darken-1">
+                <div class="col s12 center row z-depth-2 grey darken-1">
                     <div class="preloader-wrapper big" style="visibility: hidden">
                         <div class="spinner-layer spinner-blue-only">
                             <div class="circle-clipper left">
@@ -90,8 +92,7 @@
                         </form>
                     </div>
                 </div>
-
-                <div class="row z-depth-2 grey darken-1">
+                <div class="col s12 row z-depth-2 grey darken-1">
                     <div class="container">
                         <form class="col s12" autocomplete="off">
                             <h5 class="white-text"> Add song to queue</h5>
@@ -117,12 +118,20 @@
                 </div>
             </div>
         </div>
-        <div id="queue" class="col s12 white-text">
-            <!-------------------- Start of queue list -->
-            <ul class="collection" id="queueCollection">
 
-            </ul>
-            <!-------------------- End of queue list -->
+        <div id="queue" class="col s12 white-text">
+            <div class="container">
+                <h4>Coming Up Next! </h4>
+                <!-------------------- Start of queue list -->
+                <ul class="collection" id="queueCollection">
+                    <li class="collection-item avatar grey darken-1">
+                        <img height="64" src="http://pixelartmaker.com/art/8e901395c4a3dd4.png" alt="" class="circle">
+                        <span class="title">No user requested songs added yet</span>
+                        <p>Add a song and it will appear here!</p>
+                    </li>
+                </ul>
+                <!-------------------- End of queue list -->
+            </div>
         </div>
     </div>
 
@@ -175,6 +184,10 @@
         };
         connection.onclose = function m(uri, protocol) {
             console.log("on close");
+            let ele = document.getElementById("conStatusBar");
+            ele.classList.remove("green");
+            ele.classList.add("red");
+
             if (typeof maxTries === 'undefined') {
                 maxTries = 5
             }
@@ -182,6 +195,12 @@
                 console.log("Trying to connect again. " + maxTries + " tries left");
                 addOn(--maxTries);
             }
+        };
+        connection.onopen = function (event) {
+            let ele = document.getElementById("conStatusBar");
+            ele.classList.remove("red");
+            ele.classList.add("green")
+
         };
     }
 
@@ -276,18 +295,24 @@
                 },
                 success: function (data) {
                     let res = "";
-                    for (let tracks of data.tracks){
+                    for (let tracks of data.tracks) {
 
                         res = res + " <li class=\"collection-item avatar grey darken-1\">\n" +
-                            "                    <img height=\"64\" src="+ tracks.album.images[0].url +" alt=\"\" class=\"circle\">\n" +
-                            "                    <span class=\"title\">" + tracks.name +"</span>\n" +
-                            "                    <p>By "+ tracks.artists[0].name+" </p>\n" +
+                            "                    <img height=\"64\" src=" + tracks.album.images[0].url + " alt=\"\" class=\"circle\">\n" +
+                            "                    <span class=\"title\">" + tracks.name + "</span>\n" +
+                            "                    <p>By " + tracks.artists[0].name + " </p>\n" +
                             "                </li>";
                     }
                     document.getElementById("queueCollection").innerHTML = res;
-                    console.log(res)
                 }
             });
+        } else {
+            let res = '<li class="collection-item avatar grey darken-1">\n' +
+                '                        <img height="64" src="http://pixelartmaker.com/art/8e901395c4a3dd4.png" alt="" class="circle">\n' +
+                '                        <span class="title">Nothing Added Yet</span>\n' +
+                '                        <p>Add a song and it will appear here!</p>\n' +
+                '                    </li>';
+            document.getElementById("queueCollection").innerHTML = res;
         }
     }
 </script>

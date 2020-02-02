@@ -9,7 +9,6 @@ import com.baizelmathew.spotifycontroller.spotifywrapper.Player;
 import com.baizelmathew.spotifycontroller.utils.OnEventCallback;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.spotify.protocol.client.Subscription;
 import com.spotify.protocol.types.PlayerState;
 
@@ -107,7 +106,8 @@ class WebSocket extends WebSocketServer {
     public void initiateBroadCastOfState(PlayerState playerState) {
         Log.d(TAG, "Start broadcast state");
         JsonElement json = new Gson().toJsonTree(playerState);
-        json.getAsJsonObject().addProperty("queue", new Gson().toJson(Player.getInstance().getCustomQueue().getqueue()));
+        json.getAsJsonObject().addProperty("queue", new Gson().toJson(Player.getInstance().getCustomQueue().getQueue()));
+        json.getAsJsonObject().addProperty("queueCurrentPos", new Gson().toJson(Player.getInstance().getCustomQueue().getCurrentPosition()));
         broadcast(json.toString());
         Log.d(TAG, "broadcast state " + json.toString());
     }
