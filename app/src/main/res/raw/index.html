@@ -71,7 +71,7 @@
                     </div>
 
                     <div class="container" id="searchArea">
-                        <form class="col s12" autocomplete="off" onsubmit="search()">
+                        <form class="col s12" autocomplete="off" onsubmit="search()" id="searchForm">
                             <h5 class="white-text"> Add song to queue</h5>
 
                             <div class="row">
@@ -161,6 +161,9 @@
 </body>
 </html>
 <script>
+    $("#searchForm").submit(function(e) {
+        e.preventDefault();
+    });
     $(document).ready(function () {
         $('.tabs').tabs();
         $('#modal').modal({
