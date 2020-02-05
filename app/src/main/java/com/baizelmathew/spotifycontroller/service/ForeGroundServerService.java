@@ -64,12 +64,12 @@ public class ForeGroundServerService extends Service {
         onFailSocketCallBack = new OnFailSocketCallBack() {
             @Override
             public void onClose(WebSocket conn, int code, String reason, boolean remote) {
-                stopService();
+                //TODO: Shows disconnected users
             }
 
             @Override
             public void onError(WebSocket conn, Exception ex) {
-                stopService();
+               // stopService();
             }
         };
     }
