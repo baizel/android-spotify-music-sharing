@@ -24,7 +24,15 @@ import java.net.InetSocketAddress;
  * Can also register callbacks so any message received can be passed forward
  */
 class WebSocket extends WebSocketServer {
+    enum Status {
+        OPEN,
+        CLOSED,
+        ERROR,
+        UNKNOWN
+    }
+
     private static String TAG = "MySocket";
+    private Status currentStatus = Status.UNKNOWN;
 
     private String wsAddress;
     private WebSocketCallback callback;
@@ -67,6 +75,7 @@ class WebSocket extends WebSocketServer {
     @Override
     public void onClose(org.java_websocket.WebSocket conn, int code, String reason, boolean remote) {
         Log.d(TAG, "Socket Closed " + conn.getRemoteSocketAddress() + " Reason: " + reason);
+        currentStatus = Status.CLOSED;
         callback.onClose(conn, code, reason, remote);
     }
 
@@ -80,12 +89,14 @@ class WebSocket extends WebSocketServer {
     @Override
     public void onError(org.java_websocket.WebSocket conn, Exception ex) {
         Log.d(TAG, "Error" + ex.getLocalizedMessage());
+        currentStatus = Status.ERROR;
         callback.onError(conn, ex);
     }
 
     @Override
     public void onStart() {
         broadcastState();
+        currentStatus = Status.OPEN;
         Log.d(TAG, "Start web socket server");
 
     }
@@ -110,6 +121,10 @@ class WebSocket extends WebSocketServer {
         json.getAsJsonObject().addProperty("queueCurrentPos", new Gson().toJson(Player.getInstance().getCustomQueue().getCurrentPosition()));
         broadcast(json.toString());
         Log.d(TAG, "broadcast state " + json.toString());
+    }
+
+    public Status getCurrentStatus() {
+        return currentStatus;
     }
 
 }

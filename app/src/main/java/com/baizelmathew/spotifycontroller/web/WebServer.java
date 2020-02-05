@@ -11,9 +11,11 @@ import com.baizelmathew.spotifycontroller.spotifywrapper.Player;
 import com.baizelmathew.spotifycontroller.utils.DataInjector;
 import com.baizelmathew.spotifycontroller.utils.FallbackErrorPage;
 import com.baizelmathew.spotifycontroller.utils.OnEventCallback;
+import com.baizelmathew.spotifycontroller.utils.OnFailSocketCallBack;
 import com.baizelmathew.spotifycontroller.utils.ServiceBroadcastReceiver;
 import com.spotify.protocol.types.PlayerState;
 
+import org.java_websocket.exceptions.WebsocketNotConnectedException;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -46,10 +48,9 @@ public class WebServer extends NanoHTTPD {
     public static final String ACTION_PAUSE_ALL_INCOMING_REQUEST = "pause_all_incoming_requests";
     public static final String EXTRA_PAUSE_INCOMING_REQUEST_STATE = "EXTRA_PAUSE_INCOMING_REQUEST_STATE";
 
-
-    public static WebServer getInstance() {
+    public static WebServer getInstance(OnFailSocketCallBack callBack) {
         if (server == null) {
-            return server = new WebServer();
+            return server = new WebServer(callBack);
         }
         return server;
     }
@@ -65,7 +66,7 @@ public class WebServer extends NanoHTTPD {
      * Creates the web server instance and stores in the static variable server.
      * This also handles a ny incoming web socket requests
      */
-    private WebServer() {
+    private WebServer(final OnFailSocketCallBack onFailSocketCallBack) {
         super(getIPAddress(isIpv4), HTTP_PORT);
         String ipAddress = getIPAddress(isIpv4);
 
@@ -74,8 +75,9 @@ public class WebServer extends NanoHTTPD {
         webSocket = new WebSocket(ipAddress, SOCKET_PORT).registerCallback(new WebSocketCallback() {
             @Override
             public void onClose(org.java_websocket.WebSocket conn, int code, String reason, boolean remote) {
-
+                onFailSocketCallBack.onClose(conn,code,reason,remote);
             }
+
             //The payloads are defined in the HTML page
             @Override
             public void onMessage(org.java_websocket.WebSocket conn, String message) {
@@ -114,12 +116,10 @@ public class WebServer extends NanoHTTPD {
 
             @Override
             public void onError(org.java_websocket.WebSocket conn, Exception ex) {
+                onFailSocketCallBack.onError(conn,ex);
                 if (conn != null)
                     conn.close();
                 httpAddress = "Error Starting WebSocket: "+ ex.getLocalizedMessage();
-                //TODO: Stop Service
-//                stop();
-
             }
         });
     }
