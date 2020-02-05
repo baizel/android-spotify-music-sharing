@@ -20,6 +20,7 @@ import android.widget.Toast;
 
 import com.baizelmathew.spotifycontroller.R;
 import com.baizelmathew.spotifycontroller.spotifywrapper.Player;
+import com.baizelmathew.spotifycontroller.utils.OnFailSocketCallBack;
 import com.baizelmathew.spotifycontroller.utils.ServiceBroadcastReceiver;
 import com.baizelmathew.spotifycontroller.utils.OnEventCallback;
 import com.baizelmathew.spotifycontroller.web.WebServer;
@@ -29,6 +30,9 @@ import com.spotify.android.appremote.api.SpotifyAppRemote;
 import com.spotify.protocol.client.Subscription;
 import com.spotify.protocol.types.PlayerState;
 import com.spotify.protocol.types.Track;
+
+import org.java_websocket.WebSocket;
+import org.java_websocket.exceptions.WebsocketNotConnectedException;
 
 import java.io.IOException;
 
@@ -42,6 +46,7 @@ public class ForeGroundServerService extends Service {
 
     public static final String ACTION_SERVER_ADDRESS_BROADCAST = ForeGroundServerService.class.getName() + "AddressBroadcast";
     public static final String ACTION_TRACK_BROADCAST = ForeGroundServerService.class.getName() + "TrackBroadcast";
+    public static final String ACTION_SERVICE_STOPPED = ForeGroundServerService.class.getName() + "Stopped";
 
     public static final String EXTRA_SERVER_ADDRESS = "extra_server_address";
     public static final String EXTRA_TRACK = "extra_track";
@@ -52,9 +57,21 @@ public class ForeGroundServerService extends Service {
     private WebServer webServer;
     private Player player;
     private ServiceBroadcastReceiver serviceBroadcastReceiver = new ServiceBroadcastReceiver();
+    private OnFailSocketCallBack onFailSocketCallBack;
 
     public ForeGroundServerService() {
         //https://developer.android.com/guide/components/services
+        onFailSocketCallBack = new OnFailSocketCallBack() {
+            @Override
+            public void onClose(WebSocket conn, int code, String reason, boolean remote) {
+                stopService();
+            }
+
+            @Override
+            public void onError(WebSocket conn, Exception ex) {
+                stopService();
+            }
+        };
     }
 
     private void debugToast(String s) {
@@ -66,6 +83,7 @@ public class ForeGroundServerService extends Service {
      * Method used to broadcast the web server address to anything listening.
      * Used to retrieve the web server address by the main activity so it can be updated
      * and shown to the user when the server is launched.
+     *
      * @param serverLink as a http link
      */
     private void sendBroadcastAddress(String serverLink) {
@@ -78,6 +96,7 @@ public class ForeGroundServerService extends Service {
 
     /**
      * Same as sendBroadcastAddress but for current song information.
+     *
      * @param track See Spotify track object
      */
     private void sendBroadcastTrack(Track track) {
@@ -141,7 +160,7 @@ public class ForeGroundServerService extends Service {
         else
             startForeground(ONGOING_NOTIFICATION_ID, new Notification());
 
-        webServer = WebServer.getInstance();
+        webServer = WebServer.getInstance(onFailSocketCallBack);
         player = Player.getInstance();
         Subscription.EventCallback<PlayerState> playerStateEventCallback = new Subscription.EventCallback<PlayerState>() {
             @Override
@@ -150,9 +169,9 @@ public class ForeGroundServerService extends Service {
                 sendBroadcastTrack(playerState.track);
                 try {
                     webServer.startServer();
-                } catch (IOException e) {
+                } catch (IOException | WebsocketNotConnectedException e) {
                     e.printStackTrace();
-                    stopSelf();
+                    stopService();
                 }
             }
         };
@@ -171,7 +190,7 @@ public class ForeGroundServerService extends Service {
 
             @Override
             public void onFailure(Throwable throwable) {
-                stopSelf();
+                stopService();
                 debugToast("Service Not Started " + throwable.getLocalizedMessage());
             }
         };
@@ -181,6 +200,7 @@ public class ForeGroundServerService extends Service {
 
     /**
      * Required for Service classes
+     *
      * @param intent
      * @return
      */
@@ -191,6 +211,7 @@ public class ForeGroundServerService extends Service {
 
     /**
      * Required for Service classes
+     *
      * @param intent
      * @param flags
      * @param startId
@@ -219,4 +240,10 @@ public class ForeGroundServerService extends Service {
     public void onTaskRemoved(Intent rootIntent) {
         super.onTaskRemoved(rootIntent);
     }
+
+  private void stopService(){
+      Intent intent = new Intent(ACTION_SERVICE_STOPPED);
+      LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+      stopSelf();
+  }
 }

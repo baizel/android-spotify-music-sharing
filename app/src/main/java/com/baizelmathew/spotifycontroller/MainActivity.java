@@ -63,6 +63,14 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }, new IntentFilter(ForeGroundServerService.ACTION_SERVER_ADDRESS_BROADCAST)
         );
+        LocalBroadcastManager.getInstance(this).registerReceiver(
+                new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        updateLink("Server cannot be started yet! Try again Later");
+                    }
+                }, new IntentFilter(ForeGroundServerService.ACTION_SERVICE_STOPPED)
+        );
 
 
         //Authenticate the Spotify SDk and get token
