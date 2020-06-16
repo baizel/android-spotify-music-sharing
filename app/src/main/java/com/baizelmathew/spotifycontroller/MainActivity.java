@@ -37,53 +37,57 @@ import static com.baizelmathew.spotifycontroller.spotifywrapper.Player.REQUEST_C
 public class MainActivity extends AppCompatActivity {
     /**
      * Creats the view and starts the foreground service
+     *
      * @param savedInstanceState
      */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        //Register recived to so the view can be updated with track info and server address
-        LocalBroadcastManager.getInstance(this).registerReceiver(
-                new BroadcastReceiver() {
-                    @Override
-                    public void onReceive(Context context, Intent intent) {
-                        String track = intent.getStringExtra(ForeGroundServerService.EXTRA_TRACK);
-                        updateInfo(new Gson().fromJson(track, Track.class));
-                    }
-                }, new IntentFilter(ForeGroundServerService.ACTION_TRACK_BROADCAST)
-        );
+        if (savedInstanceState == null) {
+            //Register received to so the view can be updated with track info and server address
+            LocalBroadcastManager.getInstance(this).registerReceiver(
+                    new BroadcastReceiver() {
+                        @Override
+                        public void onReceive(Context context, Intent intent) {
+                            String track = intent.getStringExtra(ForeGroundServerService.EXTRA_TRACK);
+                            updateInfo(new Gson().fromJson(track, Track.class));
+                        }
+                    }, new IntentFilter(ForeGroundServerService.ACTION_TRACK_BROADCAST)
+            );
 
-        LocalBroadcastManager.getInstance(this).registerReceiver(
-                new BroadcastReceiver() {
-                    @Override
-                    public void onReceive(Context context, Intent intent) {
-                        String link = intent.getStringExtra(ForeGroundServerService.EXTRA_SERVER_ADDRESS);
-                        updateLink(link);
-                    }
-                }, new IntentFilter(ForeGroundServerService.ACTION_SERVER_ADDRESS_BROADCAST)
-        );
-        LocalBroadcastManager.getInstance(this).registerReceiver(
-                new BroadcastReceiver() {
-                    @Override
-                    public void onReceive(Context context, Intent intent) {
-                        updateLink("Server cannot be started yet! Try again Later");
-                    }
-                }, new IntentFilter(ForeGroundServerService.ACTION_SERVICE_STOPPED)
-        );
+            LocalBroadcastManager.getInstance(this).registerReceiver(
+                    new BroadcastReceiver() {
+                        @Override
+                        public void onReceive(Context context, Intent intent) {
+                            String link = intent.getStringExtra(ForeGroundServerService.EXTRA_SERVER_ADDRESS);
+                            updateLink(link);
+                        }
+                    }, new IntentFilter(ForeGroundServerService.ACTION_SERVER_ADDRESS_BROADCAST)
+            );
+            LocalBroadcastManager.getInstance(this).registerReceiver(
+                    new BroadcastReceiver() {
+                        @Override
+                        public void onReceive(Context context, Intent intent) {
+                            updateLink("Server Has stopped, Please start manually");
+                        }
+                    }, new IntentFilter(ForeGroundServerService.ACTION_SERVICE_STOPPED)
+            );
 
 
-        //Authenticate the Spotify SDk and get token
-        AuthenticationRequest.Builder builder =
-                new AuthenticationRequest.Builder(CLIENT_ID, AuthenticationResponse.Type.TOKEN, REDIRECT_URI);
+            //Authenticate the Spotify SDK and get token
+            AuthenticationRequest.Builder builder =
+                    new AuthenticationRequest.Builder(CLIENT_ID, AuthenticationResponse.Type.TOKEN, REDIRECT_URI);
 
-        builder.setScopes(new String[]{"streaming"});
-        AuthenticationRequest request = builder.build();
-        AuthenticationClient.openLoginActivity(this, REQUEST_CODE, request);
+            builder.setScopes(new String[]{"streaming"});
+            AuthenticationRequest request = builder.build();
+            AuthenticationClient.openLoginActivity(this, REQUEST_CODE, request);
 
-        broadcastForeGroundService(ForeGroundServerService.ACTION_START_FOREGROUND_SERVICE);
+            broadcastForeGroundService(ForeGroundServerService.ACTION_START_FOREGROUND_SERVICE);
+        }
 
     }
+
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
         super.onActivityResult(requestCode, resultCode, intent);
 
@@ -94,13 +98,14 @@ public class MainActivity extends AppCompatActivity {
             switch (response.getType()) {
                 // Response was successful and contains auth token
                 case TOKEN:
-                   Player.setAccessToken(response.getAccessToken());
+                    Player.setAccessToken(response.getAccessToken());
                     break;
                 default:
                     // Handle other cases
             }
         }
     }
+
     public void onClickStop(View v) {
         broadcastForeGroundService(ForeGroundServerService.ACTION_STOP_FOREGROUND_SERVICE);
     }
@@ -111,6 +116,7 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * Starts server
+     *
      * @param action
      */
     private void broadcastForeGroundService(String action) {
@@ -122,6 +128,7 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * Updates the server link
+     *
      * @param address
      */
     private void updateLink(String address) {
@@ -131,12 +138,13 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * Updates the background image and track info on the app
+     *
      * @param t
      */
     private void updateInfo(Track t) {
 
         if (t != null) {
-            Player.getInstance().getImageOfTrack(t,new CallResult.ResultCallback<Bitmap>() {
+            Player.getInstance().getImageOfTrack(t, new CallResult.ResultCallback<Bitmap>() {
                 @Override
                 public void onResult(Bitmap bitmap) {
                     BlurImageView img = findViewById(R.id.image);
