@@ -30,7 +30,7 @@ public class Player {
     public static final String CLIENT_ID = "05e5055c73a74eb8b8f536e3a2e5a3ac";
     private static ConnectionParams connectionParams = null;
     private static Player instance = null;
-    private static SpotifyAppRemote mSpotifyAppRemote = null;
+    private static SpotifyAppRemote spotifyRemoteRef = null;
     private static String accessToken = null;
     private static UserQueue q = null;
     private String initialPlayerState = null;
@@ -68,80 +68,51 @@ public class Player {
 
     /**
      * Connects to Spotify if there has not already been a connection made.
-     * Aftter connecting the SpotifyAppRemote will be pased can now register callback for updates on he app
+     * After connecting the SpotifyAppRemote will be passed can now register callback for updates on he app
      *
      * @param context
      * @param callback
      * @param playerStateEventCallback
      */
     public void connect(Context context, final Connector.ConnectionListener callback, final Subscription.EventCallback<PlayerState> playerStateEventCallback) {
-        if (mSpotifyAppRemote == null || !mSpotifyAppRemote.isConnected()) {
-            SpotifyAppRemote.connect(context, connectionParams,
-                    new Connector.ConnectionListener() {
-                        @Override
-                        public void onConnected(SpotifyAppRemote spotifyAppRemote) {
-                            //Set spotify remote
-                            mSpotifyAppRemote = spotifyAppRemote;
-                            //Subscribe to any player events such as music change
-                            Subscription<PlayerState> subscription = mSpotifyAppRemote.getPlayerApi().subscribeToPlayerState();
-                            subscription.setEventCallback(new Subscription.EventCallback<PlayerState>() {
-                                @Override
-                                public void onEvent(PlayerState playerState) {
-                                    q.onPlayerState(playerState);
-                                    Gson g = new Gson();
-                                    updatePlayerState(g.toJson(playerState));
-                                    playerStateEventCallback.onEvent(playerState);
-                                }
-                            });
-                            callback.onConnected(mSpotifyAppRemote);
-                            Log.d(TAG, "Connected to spotify");
-
-                        }
-
-                        @Override
-                        public void onFailure(Throwable throwable) {
-                            Log.e(TAG, throwable.getMessage(), throwable);
-                            callback.onFailure(throwable);
-                        }
-                    });
+        if (spotifyRemoteRef == null || !spotifyRemoteRef.isConnected()) {
+            SpotifyAppRemote.connect(context, connectionParams, getConnectionListener(callback, playerStateEventCallback));
         }
-
     }
 
     public void disconnect() {
-        SpotifyAppRemote.disconnect(mSpotifyAppRemote);
+        SpotifyAppRemote.disconnect(spotifyRemoteRef);
     }
 
     public void getImageOfTrack(Track t, CallResult.ResultCallback<Bitmap> callback) {
-
-        mSpotifyAppRemote.getImagesApi()
+        spotifyRemoteRef.getImagesApi()
                 .getImage(t.imageUri, Image.Dimension.LARGE)
                 .setResultCallback(callback);
     }
 
     public CallResult<Empty> nextTrack() {
-        return mSpotifyAppRemote.getPlayerApi().skipNext();
+        return spotifyRemoteRef.getPlayerApi().skipNext();
     }
 
     public CallResult<Empty> previousTrack() {
-        return mSpotifyAppRemote.getPlayerApi().skipPrevious();
+        return spotifyRemoteRef.getPlayerApi().skipPrevious();
     }
 
     public CallResult<Empty> pause() {
-        return mSpotifyAppRemote.getPlayerApi().pause();
+        return spotifyRemoteRef.getPlayerApi().pause();
     }
 
     public CallResult<Empty> resume() {
-        return mSpotifyAppRemote.getPlayerApi().resume();
+        return spotifyRemoteRef.getPlayerApi().resume();
     }
 
     public CallResult<Empty> addToQueue(String uri) {
         q.addToQueue(uri);
-        return mSpotifyAppRemote.getPlayerApi().queue(uri);
+        return spotifyRemoteRef.getPlayerApi().queue(uri);
     }
 
     public void getPlayerState(final OnEventCallback callback) {
-        mSpotifyAppRemote.getPlayerApi().getPlayerState().setResultCallback(new CallResult.ResultCallback<PlayerState>() {
+        spotifyRemoteRef.getPlayerApi().getPlayerState().setResultCallback(new CallResult.ResultCallback<PlayerState>() {
             @Override
             public void onResult(PlayerState playerState) {
                 callback.onEvent(playerState);
@@ -150,11 +121,54 @@ public class Player {
     }
 
     public void subscribeToPlayerState(Subscription.EventCallback<PlayerState> callback) {
-        mSpotifyAppRemote.getPlayerApi().subscribeToPlayerState().setEventCallback(callback);
+        spotifyRemoteRef.getPlayerApi().subscribeToPlayerState().setEventCallback(callback);
     }
 
     public UserQueue getCustomQueue() {
         return q;
     }
 
+    private void subscribeToStateChange(final Subscription.EventCallback<PlayerState> playerStateEventCallback) {
+        Subscription<PlayerState> subscription = spotifyRemoteRef.getPlayerApi().subscribeToPlayerState();
+        subscription.setEventCallback(new Subscription.EventCallback<PlayerState>() {
+            @Override
+            public void onEvent(PlayerState playerState) {
+                onPlayerStateEvent(playerState, playerStateEventCallback);
+            }
+        });
+    }
+
+    private void onPlayerStateEvent(PlayerState playerState, final Subscription.EventCallback<PlayerState> playerStateEventCallback) {
+        q.onPlayerState(playerState);
+        Gson g = new Gson();
+        updatePlayerState(g.toJson(playerState));
+        playerStateEventCallback.onEvent(playerState);
+    }
+
+    private Connector.ConnectionListener getConnectionListener(final Connector.ConnectionListener callback, final Subscription.EventCallback<PlayerState> playerStateEventCallback) {
+        return new Connector.ConnectionListener() {
+            @Override
+            public void onConnected(SpotifyAppRemote spotifyAppRemote) {
+                handleOnSpotifyRemoteConnect(spotifyAppRemote, playerStateEventCallback, callback);
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+                handleOnError(throwable, callback);
+            }
+        };
+    }
+
+    private void handleOnError(Throwable throwable, Connector.ConnectionListener callback) {
+        Log.e(TAG, throwable.getMessage(), throwable);
+        callback.onFailure(throwable);
+    }
+
+    private void handleOnSpotifyRemoteConnect(SpotifyAppRemote spotifyAppRemote, Subscription.EventCallback<PlayerState> playerStateEventCallback, Connector.ConnectionListener callback) {
+        spotifyRemoteRef = spotifyAppRemote;
+        //Subscribe to any player events such as music change
+        subscribeToStateChange(playerStateEventCallback);
+        callback.onConnected(spotifyRemoteRef);
+        Log.d(TAG, "Connected to spotify");
+    }
 }

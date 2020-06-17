@@ -16,12 +16,10 @@ import android.widget.TextView;
 
 import com.baizelmathew.spotifycontroller.service.ForeGroundServerService;
 import com.baizelmathew.spotifycontroller.spotifywrapper.Player;
-import com.baizelmathew.spotifycontroller.utils.ServiceBroadcastReceiver;
+import com.baizelmathew.spotifycontroller.service.ServiceBroadcastReceiver;
 import com.google.gson.Gson;
 import com.jgabrielfreitas.core.BlurImageView;
-import com.spotify.android.appremote.api.SpotifyAppRemote;
 import com.spotify.protocol.client.CallResult;
-import com.spotify.protocol.types.Image;
 import com.spotify.protocol.types.Track;
 import com.spotify.sdk.android.authentication.AuthenticationClient;
 import com.spotify.sdk.android.authentication.AuthenticationRequest;
