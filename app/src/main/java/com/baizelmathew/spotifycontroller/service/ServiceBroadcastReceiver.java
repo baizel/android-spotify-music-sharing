@@ -1,7 +1,7 @@
 /*
   @Author: Baizel Mathew
  */
-package com.baizelmathew.spotifycontroller.utils;
+package com.baizelmathew.spotifycontroller.service;
 
 import android.content.Context;
 import android.content.Intent;

@@ -3,6 +3,8 @@
  */
 package com.baizelmathew.spotifycontroller.utils;
 
+import com.baizelmathew.spotifycontroller.web.Route;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,29 +27,32 @@ public final class DataInjector {
     /**
      * Empty constructor because an instance is needed
      */
-    public DataInjector() {
+    private DataInjector() {
     }
 
     /**
      * Cant be static because it requires the class to get resources from the Raw folder
      *
-     * @param fileName as a string which should be located in /res/raw/ and contain the HTML code
+     * @param route the path and a boolean
      * @param data     data to be injected as a hashmap of keys and values. the keys should be the variable name that is present in the HTML page
      * @return the file as a string with injected data
      * @throws NullPointerException throen when inputStream is null
-     * @throws IOException when buffer reader fails
+     * @throws IOException          when buffer reader fails
      */
-    public String injectData(String fileName, HashMap<String, String> data) throws NullPointerException, IOException {
-        InputStream inputStream = Objects.requireNonNull(this.getClass().getClassLoader()).getResourceAsStream("res/raw/" + fileName);
+    public static String readFileAndInjectData(Object context, Route route, HashMap<String, String> data) throws NullPointerException, IOException {
+        String fileName = route.getPath();
+        InputStream inputStream = Objects.requireNonNull(context.getClass().getClassLoader()).getResourceAsStream(fileName);
         if (inputStream == null)
             throw new NullPointerException("Error Reading file " + fileName);
 
         BufferedReader r = new BufferedReader(new InputStreamReader(inputStream));
         StringBuilder total = new StringBuilder();
         for (String line; (line = r.readLine()) != null; ) {
-            for (String key : data.keySet()) {
-                String val = data.get(key);
-                line = line.replace("{{" + key + "}}", val != null ? val : "Error");
+            if (route.isDataInjectionNeeded()) {
+                for (String key : data.keySet()) {
+                    String val = data.get(key);
+                    line = line.replace("{{" + key + "}}", val != null ? val : "Error");
+                }
             }
             total.append(line).append('\n');
         }

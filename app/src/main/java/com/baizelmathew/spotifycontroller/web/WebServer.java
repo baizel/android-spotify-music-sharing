@@ -3,25 +3,20 @@
  */
 package com.baizelmathew.spotifycontroller.web;
 
-import android.content.Intent;
-import android.util.Log;
-
-import com.baizelmathew.spotifycontroller.service.ForeGroundServerService;
 import com.baizelmathew.spotifycontroller.spotifywrapper.Player;
 import com.baizelmathew.spotifycontroller.utils.DataInjector;
 import com.baizelmathew.spotifycontroller.utils.FallbackErrorPage;
 import com.baizelmathew.spotifycontroller.utils.OnEventCallback;
 import com.baizelmathew.spotifycontroller.utils.OnFailSocketCallBack;
-import com.baizelmathew.spotifycontroller.utils.ServiceBroadcastReceiver;
 import com.spotify.protocol.types.PlayerState;
 
-import org.java_websocket.exceptions.WebsocketNotConnectedException;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.net.NoRouteToHostException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -37,18 +32,18 @@ public class WebServer extends NanoHTTPD {
     private static final int SOCKET_PORT = 6969;
     private static final String PLAY_ARROW = "play_arrow"; // Icons name in HTML
     private static final String PAUSE = "PAUSE";// Icons name in HTML
-
     private static boolean isIpv4 = true;
     private static String httpAddress;
     private static WebServer server = null;
 
     private static boolean isIncomingPaused = false;
     private WebSocket webSocket;
-
+    private HashMap<String, String> injectionData;
     public static final String ACTION_PAUSE_ALL_INCOMING_REQUEST = "pause_all_incoming_requests";
     public static final String EXTRA_PAUSE_INCOMING_REQUEST_STATE = "EXTRA_PAUSE_INCOMING_REQUEST_STATE";
+    private static final Router ROUTER = new Router();
 
-    public static WebServer getInstance(OnFailSocketCallBack callBack) {
+    public static WebServer getInstance(OnFailSocketCallBack callBack) throws NoRouteToHostException {
         if (server == null) {
             return server = new WebServer(callBack);
         }
@@ -66,62 +61,14 @@ public class WebServer extends NanoHTTPD {
      * Creates the web server instance and stores in the static variable server.
      * This also handles a ny incoming web socket requests
      */
-    private WebServer(final OnFailSocketCallBack onFailSocketCallBack) {
+    private WebServer(final OnFailSocketCallBack onFailSocketCallBack) throws NoRouteToHostException {
         super(getIPAddress(isIpv4), HTTP_PORT);
         String ipAddress = getIPAddress(isIpv4);
 
         httpAddress = "http://" + ipAddress + ":" + HTTP_PORT;
         //Calls back to handle incoming requests
-        webSocket = new WebSocket(ipAddress, SOCKET_PORT).registerCallback(new WebSocketCallback() {
-            @Override
-            public void onClose(org.java_websocket.WebSocket conn, int code, String reason, boolean remote) {
-                onFailSocketCallBack.onClose(conn,code,reason,remote);
-            }
-
-            //The payloads are defined in the HTML page
-            @Override
-            public void onMessage(org.java_websocket.WebSocket conn, String message) {
-                if (!isIncomingPaused) {
-                    try {
-                        final Player player = Player.getInstance();
-                        JSONObject msg = new JSONObject(message);
-                        switch (msg.getString("payload")) {
-                            case "plsrespond":
-                                conn.send("is this working");
-                            case "next":
-                                player.nextTrack();
-                                break;
-                            case "previous":
-                                player.previousTrack();
-                                break;
-                            case "play":
-                                player.getPlayerState(new OnEventCallback() {
-                                    @Override
-                                    public void onEvent(PlayerState playerState) {
-                                        if (playerState.isPaused)
-                                            player.resume();
-                                        else
-                                            player.pause();
-                                    }
-                                });
-                            case "playUri":
-                                String uri = msg.getString("uri");
-                                player.addToQueue(uri);
-                        }
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-
-            @Override
-            public void onError(org.java_websocket.WebSocket conn, Exception ex) {
-                onFailSocketCallBack.onError(conn,ex);
-                if (conn != null)
-                    conn.close();
-                httpAddress = "Error Starting WebSocket: "+ ex.getLocalizedMessage();
-            }
-        });
+        initWebSocketCallbacks(onFailSocketCallBack);
+        initInjectionData();
     }
 
     public static boolean getIncomingPaused() {
@@ -146,7 +93,7 @@ public class WebServer extends NanoHTTPD {
      * @param useIPv4
      * @return
      */
-    private static String getIPAddress(boolean useIPv4) {
+    private static String getIPAddress(boolean useIPv4) throws NoRouteToHostException {
         try {
             List<NetworkInterface> interfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
             for (NetworkInterface intf : interfaces) {
@@ -170,7 +117,7 @@ public class WebServer extends NanoHTTPD {
             }
         } catch (Exception ignored) {
         }
-        return null;
+        throw new NoRouteToHostException("No IP Address found");
     }
 
     public String getHttpAddress() {
@@ -186,27 +133,19 @@ public class WebServer extends NanoHTTPD {
      */
     @Override
     public Response serve(IHTTPSession session) {
-        //Dta to be injected into the page
-        HashMap<String, String> data = new HashMap<>();
-        data.put("token", Player.getAccessToken());
-        data.put("PlayIcon", PLAY_ARROW);
-        data.put("SongName", "Loading..");
-        data.put("SongDescription", "Loading..");
-        data.put("socket", webSocket.getWsAddress());
-        data.put("InitialState", Player.getInstance().getInitialPlayerState());
+        //Data to be injected into the resource
 
-        String page;
+        String resource;
+        Route route = ROUTER.route(session.getUri());
         try {
-            page = new DataInjector().injectData("index.html", data);
-        } catch (IOException e) {
+            resource = DataInjector.readFileAndInjectData(this, route, injectionData);
+        } catch (IOException | NullPointerException e) {
             e.printStackTrace();
-            page = FallbackErrorPage.getErrorPage();
-
-        } catch (NullPointerException n) {
-            n.printStackTrace();
-            page = FallbackErrorPage.getErrorPage();
+            resource = FallbackErrorPage.getErrorPage();
         }
-        return newFixedLengthResponse(page);
+        Response res = newFixedLengthResponse(resource);
+        res.setMimeType(route.getMime().getValue());
+        return res;
     }
 
     /**
@@ -226,4 +165,76 @@ public class WebServer extends NanoHTTPD {
         }
     }
 
+    private void initWebSocketCallbacks(final OnFailSocketCallBack onFailSocketCallBack) throws NoRouteToHostException {
+        webSocket = new WebSocket(getIPAddress(isIpv4), SOCKET_PORT).registerCallback(new WebSocketCallback() {
+            @Override
+            public void onClose(org.java_websocket.WebSocket conn, int code, String reason, boolean remote) {
+                onFailSocketCallBack.onClose(conn, code, reason, remote);
+            }
+
+            @Override
+            public void onMessage(org.java_websocket.WebSocket conn, String message) {
+                handleIncomingRequest(conn, message);
+            }
+
+            @Override
+            public void onError(org.java_websocket.WebSocket conn, Exception ex) {
+               handleOnError(onFailSocketCallBack, conn, ex);
+            }
+        });
+    }
+
+    private void initInjectionData() {
+        injectionData = new HashMap<>();
+        injectionData.put("token", Player.getAccessToken());
+        injectionData.put("PlayIcon", PLAY_ARROW);
+        injectionData.put("SongName", "Loading..");
+        injectionData.put("SongDescription", "Loading..");
+        injectionData.put("socket", webSocket.getWsAddress());
+        injectionData.put("InitialState", Player.getInstance().getInitialPlayerState());
+    }
+
+    private void handleIncomingRequest(org.java_websocket.WebSocket conn, String message) {
+        if (!isIncomingPaused) {
+            try {
+                handleRequestAction(conn, message);
+            } catch (JSONException ignoredRequest) {
+                ignoredRequest.printStackTrace();
+            }
+        }
+    }
+
+    private void handleRequestAction(org.java_websocket.WebSocket conn, String message) throws JSONException {
+        final Player player = Player.getInstance();
+        JSONObject msg = new JSONObject(message);
+        switch (msg.getString("payload")) {
+            case "plsrespond":
+                conn.send("is this working");
+            case "next":
+                player.nextTrack();
+                break;
+            case "previous":
+                player.previousTrack();
+                break;
+            case "play":
+                player.getPlayerState(new OnEventCallback() {
+                    @Override
+                    public void onEvent(PlayerState playerState) {
+                        if (playerState.isPaused)
+                            player.resume();
+                        else
+                            player.pause();
+                    }
+                });
+            case "playUri":
+                String uri = msg.getString("uri");
+                player.addToQueue(uri);
+        }
+    }
+    private void handleOnError(OnFailSocketCallBack onFailSocketCallBack, org.java_websocket.WebSocket conn, Exception ex) {
+        onFailSocketCallBack.onError(conn, ex);
+        if (conn != null)
+            conn.close();
+        httpAddress = "Error on WebSocket: " + ex.getLocalizedMessage();
+    }
 }
