@@ -21,9 +21,9 @@ import com.google.gson.Gson;
 import com.jgabrielfreitas.core.BlurImageView;
 import com.spotify.protocol.client.CallResult;
 import com.spotify.protocol.types.Track;
-import com.spotify.sdk.android.authentication.AuthenticationClient;
-import com.spotify.sdk.android.authentication.AuthenticationRequest;
-import com.spotify.sdk.android.authentication.AuthenticationResponse;
+import com.spotify.sdk.android.auth.AuthorizationClient;
+import com.spotify.sdk.android.auth.AuthorizationRequest;
+import com.spotify.sdk.android.auth.AuthorizationResponse;
 
 import static com.baizelmathew.spotifycontroller.spotifywrapper.Player.CLIENT_ID;
 import static com.baizelmathew.spotifycontroller.spotifywrapper.Player.REDIRECT_URI;
@@ -74,12 +74,12 @@ public class MainActivity extends AppCompatActivity {
 
 
             //Authenticate the Spotify SDK and get token
-            AuthenticationRequest.Builder builder =
-                    new AuthenticationRequest.Builder(CLIENT_ID, AuthenticationResponse.Type.TOKEN, REDIRECT_URI);
+            AuthorizationRequest.Builder builder =
+                    new AuthorizationRequest.Builder(CLIENT_ID, AuthorizationResponse.Type.TOKEN, REDIRECT_URI);
 
             builder.setScopes(new String[]{"streaming"});
-            AuthenticationRequest request = builder.build();
-            AuthenticationClient.openLoginActivity(this, REQUEST_CODE, request);
+            AuthorizationRequest request = builder.build();
+            AuthorizationClient.openLoginActivity(this, REQUEST_CODE, request);
 
             broadcastForeGroundService(ForeGroundServerService.ACTION_START_FOREGROUND_SERVICE);
         }
@@ -91,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Check if result comes from the correct activity
         if (requestCode == REQUEST_CODE) {
-            AuthenticationResponse response = AuthenticationClient.getResponse(resultCode, intent);
+            AuthorizationResponse response = AuthorizationClient.getResponse(resultCode, intent);
 
             switch (response.getType()) {
                 // Response was successful and contains auth token
@@ -112,11 +112,6 @@ public class MainActivity extends AppCompatActivity {
         broadcastForeGroundService(ForeGroundServerService.ACTION_START_FOREGROUND_SERVICE);
     }
 
-    /**
-     * Starts server
-     *
-     * @param action
-     */
     private void broadcastForeGroundService(String action) {
         //start Server
         Intent startForeGroundServiceIntent = new Intent(this, ServiceBroadcastReceiver.class);
@@ -124,11 +119,6 @@ public class MainActivity extends AppCompatActivity {
         sendBroadcast(startForeGroundServiceIntent);
     }
 
-    /**
-     * Updates the server link
-     *
-     * @param address
-     */
     private void updateLink(String address) {
         TextView link = findViewById(R.id.link);
         link.setText(address);
@@ -140,7 +130,6 @@ public class MainActivity extends AppCompatActivity {
      * @param t
      */
     private void updateInfo(Track t) {
-
         if (t != null) {
             Player.getInstance().getImageOfTrack(t, new CallResult.ResultCallback<Bitmap>() {
                 @Override

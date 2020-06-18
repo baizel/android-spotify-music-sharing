@@ -1,4 +1,4 @@
-package com.baizelmathew.spotifycontroller.utils;
+package com.baizelmathew.spotifycontroller.web.utils;
 
 public interface OnFailSocketCallBack {
     void onClose(org.java_websocket.WebSocket conn, int code, String reason, boolean remote);

@@ -3,16 +3,24 @@
  */
 package com.baizelmathew.spotifycontroller.web;
 
+import android.graphics.Bitmap;
+
 import com.baizelmathew.spotifycontroller.spotifywrapper.Player;
-import com.baizelmathew.spotifycontroller.utils.DataInjector;
-import com.baizelmathew.spotifycontroller.utils.FallbackErrorPage;
-import com.baizelmathew.spotifycontroller.utils.OnEventCallback;
-import com.baizelmathew.spotifycontroller.utils.OnFailSocketCallBack;
+import com.baizelmathew.spotifycontroller.web.router.resource.BitmapResource;
+import com.baizelmathew.spotifycontroller.web.utils.DataInjector;
+import com.baizelmathew.spotifycontroller.web.utils.FallbackErrorPage;
+import com.baizelmathew.spotifycontroller.web.utils.MIME;
+import com.baizelmathew.spotifycontroller.web.utils.OnEventCallback;
+import com.baizelmathew.spotifycontroller.web.utils.OnFailSocketCallBack;
+import com.baizelmathew.spotifycontroller.web.router.resource.PersistentResource;
+import com.baizelmathew.spotifycontroller.web.router.Router;
+import com.baizelmathew.spotifycontroller.web.router.resource.AbstractResource;
 import com.spotify.protocol.types.PlayerState;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -28,8 +36,8 @@ import fi.iki.elonen.NanoHTTPD;
  */
 public class WebServer extends NanoHTTPD {
 
-    private static final int HTTP_PORT = 8080;
-    private static final int SOCKET_PORT = 6969;
+    private static final int HTTP_PORT = 8081;
+    private static final int SOCKET_PORT = 6968;
     private static final String PLAY_ARROW = "play_arrow"; // Icons name in HTML
     private static final String PAUSE = "PAUSE";// Icons name in HTML
     private static boolean isIpv4 = true;
@@ -68,7 +76,6 @@ public class WebServer extends NanoHTTPD {
         httpAddress = "http://" + ipAddress + ":" + HTTP_PORT;
         //Calls back to handle incoming requests
         initWebSocketCallbacks(onFailSocketCallBack);
-        initInjectionData();
     }
 
     public static boolean getIncomingPaused() {
@@ -133,19 +140,37 @@ public class WebServer extends NanoHTTPD {
      */
     @Override
     public Response serve(IHTTPSession session) {
-        //Data to be injected into the resource
-
-        String resource;
-        Route route = ROUTER.route(session.getUri());
-        try {
-            resource = DataInjector.readFileAndInjectData(this, route, injectionData);
-        } catch (IOException | NullPointerException e) {
-            e.printStackTrace();
-            resource = FallbackErrorPage.getErrorPage();
+        AbstractResource resource = ROUTER.route(session.getUri());
+        if (resource instanceof PersistentResource) {
+            return handlePersistentResource((PersistentResource) resource);
+        } else if (resource instanceof BitmapResource) {
+            return handleBitmapResource(resource);
         }
-        Response res = newFixedLengthResponse(resource);
-        res.setMimeType(route.getMime().getValue());
-        return res;
+        return null; // TODO: handle default
+    }
+
+    private Response handleBitmapResource(AbstractResource resource) {
+        try {
+            return newChunkedResponse(Response.Status.OK, resource.getMime().getValue(), resource.getResourceInputStream());
+        } catch (Exception e) {
+            return getErrorResponse();
+        }
+    }
+
+    private Response handlePersistentResource(PersistentResource resource) {
+        try {
+            if (resource.isDataInjectionNeeded()) {
+                String injectedData = DataInjector.readFileAndInjectData(resource.getResourceInputStream(), refreshInjectionData());
+                return newFixedLengthResponse(Response.Status.OK, resource.getMime().getValue(), injectedData);
+            }
+            return newChunkedResponse(Response.Status.OK, resource.getMime().getValue(), resource.getResourceInputStream());
+        } catch (IOException | NullPointerException e) {
+            return getErrorResponse();
+        }
+    }
+
+    private Response getErrorResponse() {
+        return newFixedLengthResponse(Response.Status.NOT_FOUND, MIME.HTML.getValue(), FallbackErrorPage.getErrorPage());
     }
 
     /**
@@ -179,19 +204,23 @@ public class WebServer extends NanoHTTPD {
 
             @Override
             public void onError(org.java_websocket.WebSocket conn, Exception ex) {
-               handleOnError(onFailSocketCallBack, conn, ex);
+                handleOnError(onFailSocketCallBack, conn, ex);
             }
         });
     }
 
-    private void initInjectionData() {
+    private HashMap<String, String> refreshInjectionData() {
+        Player playerInstance = Player.getInstance();
+        String songName = "Loading..";
+        String sonDesc = "Loading..";
         injectionData = new HashMap<>();
         injectionData.put("token", Player.getAccessToken());
         injectionData.put("PlayIcon", PLAY_ARROW);
-        injectionData.put("SongName", "Loading..");
-        injectionData.put("SongDescription", "Loading..");
+        injectionData.put("SongName", songName);
+        injectionData.put("SongDescription", sonDesc);
         injectionData.put("socket", webSocket.getWsAddress());
-        injectionData.put("InitialState", Player.getInstance().getInitialPlayerState());
+        injectionData.put("InitialState", playerInstance.getInitialPlayerState());
+        return injectionData;
     }
 
     private void handleIncomingRequest(org.java_websocket.WebSocket conn, String message) {
@@ -231,6 +260,7 @@ public class WebServer extends NanoHTTPD {
                 player.addToQueue(uri);
         }
     }
+
     private void handleOnError(OnFailSocketCallBack onFailSocketCallBack, org.java_websocket.WebSocket conn, Exception ex) {
         onFailSocketCallBack.onError(conn, ex);
         if (conn != null)
