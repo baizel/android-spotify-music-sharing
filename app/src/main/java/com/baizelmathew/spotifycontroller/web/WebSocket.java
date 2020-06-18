@@ -3,12 +3,14 @@
  */
 package com.baizelmathew.spotifycontroller.web;
 
+import android.graphics.Bitmap;
 import android.util.Log;
 
 import com.baizelmathew.spotifycontroller.spotifywrapper.Player;
-import com.baizelmathew.spotifycontroller.utils.OnEventCallback;
+import com.baizelmathew.spotifycontroller.web.utils.OnEventCallback;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
+import com.spotify.protocol.client.CallResult;
 import com.spotify.protocol.client.Subscription;
 import com.spotify.protocol.types.PlayerState;
 

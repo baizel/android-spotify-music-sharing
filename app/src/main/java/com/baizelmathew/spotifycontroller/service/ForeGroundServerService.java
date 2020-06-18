@@ -20,8 +20,8 @@ import android.widget.Toast;
 
 import com.baizelmathew.spotifycontroller.R;
 import com.baizelmathew.spotifycontroller.spotifywrapper.Player;
-import com.baizelmathew.spotifycontroller.utils.OnFailSocketCallBack;
-import com.baizelmathew.spotifycontroller.utils.OnEventCallback;
+import com.baizelmathew.spotifycontroller.web.utils.OnFailSocketCallBack;
+import com.baizelmathew.spotifycontroller.web.utils.OnEventCallback;
 import com.baizelmathew.spotifycontroller.web.WebServer;
 import com.google.gson.Gson;
 import com.spotify.android.appremote.api.Connector;

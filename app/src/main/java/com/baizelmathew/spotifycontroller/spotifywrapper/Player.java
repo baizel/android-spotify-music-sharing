@@ -7,7 +7,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.util.Log;
 
-import com.baizelmathew.spotifycontroller.utils.OnEventCallback;
+import com.baizelmathew.spotifycontroller.web.utils.OnEventCallback;
 import com.google.gson.Gson;
 import com.spotify.android.appremote.api.ConnectionParams;
 import com.spotify.android.appremote.api.Connector;
@@ -32,11 +32,12 @@ public class Player {
     private static Player instance = null;
     private static SpotifyAppRemote spotifyRemoteRef = null;
     private static String accessToken = null;
-    private static UserQueue q = null;
+    private static UserQueue userQueue = null;
     private String initialPlayerState = null;
+    public Bitmap currentTrackImage = null;
 
     private Player() {
-        q = new UserQueue();
+        userQueue = new UserQueue();
         connectionParams = new ConnectionParams.Builder(CLIENT_ID)
                 .setRedirectUri(REDIRECT_URI)
                 .showAuthView(true)
@@ -107,7 +108,7 @@ public class Player {
     }
 
     public CallResult<Empty> addToQueue(String uri) {
-        q.addToQueue(uri);
+        userQueue.addToQueue(uri);
         return spotifyRemoteRef.getPlayerApi().queue(uri);
     }
 
@@ -125,7 +126,7 @@ public class Player {
     }
 
     public UserQueue getCustomQueue() {
-        return q;
+        return userQueue;
     }
 
     private void subscribeToStateChange(final Subscription.EventCallback<PlayerState> playerStateEventCallback) {
@@ -139,9 +140,15 @@ public class Player {
     }
 
     private void onPlayerStateEvent(PlayerState playerState, final Subscription.EventCallback<PlayerState> playerStateEventCallback) {
-        q.onPlayerState(playerState);
+        userQueue.onPlayerState(playerState);
         Gson g = new Gson();
         updatePlayerState(g.toJson(playerState));
+        spotifyRemoteRef.getImagesApi().getImage(playerState.track.imageUri, Image.Dimension.LARGE).setResultCallback(new CallResult.ResultCallback<Bitmap>() {
+            @Override
+            public void onResult(Bitmap bitmap) {
+                currentTrackImage = bitmap;
+            }
+        });
         playerStateEventCallback.onEvent(playerState);
     }
 

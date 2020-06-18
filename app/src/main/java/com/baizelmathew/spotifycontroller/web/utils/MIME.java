@@ -1,10 +1,12 @@
-package com.baizelmathew.spotifycontroller.web;
+package com.baizelmathew.spotifycontroller.web.utils;
 
 public enum MIME {
     TXT("text/plain"),
     JS("text/javascript"),
     HTML("text/html"),
-    CSS("text/css") ;
+    CSS("text/css"),
+    PNG("image/png");
+
     private String value;
 
     MIME(String value) {

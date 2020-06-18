@@ -1,14 +1,14 @@
 /*
   @Author: Baizel Mathew
  */
-package com.baizelmathew.spotifycontroller.utils;
+package com.baizelmathew.spotifycontroller.web.utils;
 
 /**
  * Static page as a last resort if reading in file fails.
  * This can be used to display to the end user if something had gone wrong
  */
-public final   class FallbackErrorPage {
-    public static String getErrorPage(){
+public final class FallbackErrorPage {
+    public static String getErrorPage() {
         return "<!DOCTYPE html>\n" +
                 "<html lang=\"en\">\n" +
                 "<head>\n" +
