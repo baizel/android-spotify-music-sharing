@@ -1,1 +1,2 @@
-include ':app', ':spotify-app-remote-release-0.6.0', ':spotify-app-remote-release-0.6.1'
+include ':spotify-app-remote-release-0.7.0'
+include ':app', ':spotify-app-remote-release-0.6.1'
