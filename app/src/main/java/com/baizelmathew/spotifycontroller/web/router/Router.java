@@ -6,11 +6,7 @@ import com.baizelmathew.spotifycontroller.web.router.resource.BitmapResource;
 import com.baizelmathew.spotifycontroller.web.router.resource.PersistentResource;
 import com.baizelmathew.spotifycontroller.web.utils.MIME;
 
-import java.util.HashMap;
-import java.util.Map;
-
 public class Router {
-    private Map<String, PersistentResource> routes = new HashMap<>();
     private final static String BASE_PATH = "res/raw/";
 
     public Router() {
@@ -29,9 +25,9 @@ public class Router {
             case "/icon.css":
                 return new PersistentResource(BASE_PATH + "icon.css", false, MIME.CSS);
             case "/api/current-image":
-                return new BitmapResource(Player.getInstance().currentTrackImage);
+                return new BitmapResource(Player.getInstance().getCurrentTrackImage());
             default:
-                return new PersistentResource(BASE_PATH + "index.html", true, MIME.HTML);
+                return new PersistentResource(BASE_PATH + "newui.html", true, MIME.HTML);
         }
     }
 

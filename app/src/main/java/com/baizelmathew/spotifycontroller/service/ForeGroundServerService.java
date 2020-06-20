@@ -72,11 +72,12 @@ public class ForeGroundServerService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        setWebServer();
+
         IntentFilter stopServiceFilter = new IntentFilter(ACTION_STOP_FOREGROUND_SERVICE);
         stopServiceFilter.addAction(ACTION_STOP_FOREGROUND_SERVICE);
         this.registerReceiver(serviceBroadcastReceiver, stopServiceFilter);
 
-        setWebServer();
         initSpotifyPlayerConnection();
         startForegroundService();
     }
@@ -189,7 +190,9 @@ public class ForeGroundServerService extends Service {
 
     private void setWebServer() {
         try {
-            webServer = WebServer.getInstance(onFailSocketCallBack);
+            webServer = WebServer.getInstance();
+            webServer.setCallBack(onFailSocketCallBack);
+            webServer.init();
         } catch (NoRouteToHostException e) {
             e.printStackTrace();
         }
