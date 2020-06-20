@@ -7,6 +7,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.util.Log;
 
+import com.baizelmathew.spotifycontroller.web.WebServer;
 import com.baizelmathew.spotifycontroller.web.utils.OnEventCallback;
 import com.google.gson.Gson;
 import com.spotify.android.appremote.api.ConnectionParams;
@@ -18,6 +19,8 @@ import com.spotify.protocol.types.Empty;
 import com.spotify.protocol.types.Image;
 import com.spotify.protocol.types.PlayerState;
 import com.spotify.protocol.types.Track;
+
+import java.net.NoRouteToHostException;
 
 /**
  * calss to interface wit the Spotify SDK
@@ -33,8 +36,10 @@ public class Player {
     private static SpotifyAppRemote spotifyRemoteRef = null;
     private static String accessToken = null;
     private static UserQueue userQueue = null;
-    private String initialPlayerState = null;
-    public Bitmap currentTrackImage = null;
+    private String cachedPlayerState = null;
+    private PlayerState cachedRawPlayerState = null;
+    private Bitmap currentTrackImage = null;
+    private Subscription.EventCallback<PlayerState> outsideEventNotifier = null;
 
     private Player() {
         userQueue = new UserQueue();
@@ -53,11 +58,11 @@ public class Player {
     }
 
     private void updatePlayerState(String gsonState) {
-        initialPlayerState = gsonState;
+        cachedPlayerState = gsonState;
     }
 
-    public String getInitialPlayerState() {
-        return initialPlayerState;
+    public String getCachedPlayerState() {
+        return cachedPlayerState;
     }
 
     public static Player getInstance() {
@@ -85,10 +90,30 @@ public class Player {
         SpotifyAppRemote.disconnect(spotifyRemoteRef);
     }
 
-    public void getImageOfTrack(Track t, CallResult.ResultCallback<Bitmap> callback) {
+    public void getImageOfTrack(Track t, final CallResult.ResultCallback<Bitmap> callback) {
         spotifyRemoteRef.getImagesApi()
                 .getImage(t.imageUri, Image.Dimension.LARGE)
-                .setResultCallback(callback);
+                .setResultCallback(new CallResult.ResultCallback<Bitmap>() {
+                    @Override
+                    public void onResult(Bitmap bitmap) {
+                        setCurrentTrackImage(bitmap);
+                        try {
+                            WebServer.getInstance().broadcast();
+                        } catch (NoRouteToHostException e) {
+                            e.printStackTrace();
+                        }
+                        callback.onResult(bitmap);
+                    }
+                });
+    }
+
+    public void getCurrentImageOfTrack(final CallResult.ResultCallback<Bitmap> callback) {
+        spotifyRemoteRef.getPlayerApi().getPlayerState().setResultCallback(new CallResult.ResultCallback<PlayerState>() {
+            @Override
+            public void onResult(PlayerState playerState) {
+                getImageOfTrack(playerState.track, callback);
+            }
+        });
     }
 
     public CallResult<Empty> nextTrack() {
@@ -131,24 +156,20 @@ public class Player {
 
     private void subscribeToStateChange(final Subscription.EventCallback<PlayerState> playerStateEventCallback) {
         Subscription<PlayerState> subscription = spotifyRemoteRef.getPlayerApi().subscribeToPlayerState();
+        outsideEventNotifier = playerStateEventCallback;
         subscription.setEventCallback(new Subscription.EventCallback<PlayerState>() {
             @Override
             public void onEvent(PlayerState playerState) {
+                cachedRawPlayerState = playerState;
                 onPlayerStateEvent(playerState, playerStateEventCallback);
             }
         });
     }
 
-    private void onPlayerStateEvent(PlayerState playerState, final Subscription.EventCallback<PlayerState> playerStateEventCallback) {
+    private void onPlayerStateEvent(final PlayerState playerState, final Subscription.EventCallback<PlayerState> playerStateEventCallback) {
         userQueue.onPlayerState(playerState);
         Gson g = new Gson();
         updatePlayerState(g.toJson(playerState));
-        spotifyRemoteRef.getImagesApi().getImage(playerState.track.imageUri, Image.Dimension.LARGE).setResultCallback(new CallResult.ResultCallback<Bitmap>() {
-            @Override
-            public void onResult(Bitmap bitmap) {
-                currentTrackImage = bitmap;
-            }
-        });
         playerStateEventCallback.onEvent(playerState);
     }
 
@@ -177,5 +198,13 @@ public class Player {
         subscribeToStateChange(playerStateEventCallback);
         callback.onConnected(spotifyRemoteRef);
         Log.d(TAG, "Connected to spotify");
+    }
+
+    public Bitmap getCurrentTrackImage() {
+        return currentTrackImage;
+    }
+
+    public void setCurrentTrackImage(Bitmap currentTrackImage) {
+        this.currentTrackImage = currentTrackImage;
     }
 }

@@ -15,16 +15,23 @@ $(document).ready(function () {
 $("#searchForm").submit(function (e) {
     e.preventDefault();
 });
+function updateImage() {
 
+}
 function addOn(maxTries) {
     connection = new WebSocket(socket);
     connection.onmessage = function (m) {
         msg = JSON.parse(m.data);
         console.log(msg);
-        (msg["is_paused"]) ? document.getElementById("PlayIcon").innerHTML = "play_arrow" : document.getElementById("PlayIcon").innerHTML = "pause";
-        document.getElementById("SongName").innerHTML = msg["track"]["name"];
-        document.getElementById("SongDescription").innerHTML = "By " + msg["track"]["artist"]["name"];
-        populateQueue(JSON.parse(msg.queue));
+        if (Object.keys(msg).length !== 0) {
+            (msg["is_paused"]) ? document.getElementById("PlayIcon").innerHTML = "play_arrow" : document.getElementById("PlayIcon").innerHTML = "pause";
+            document.getElementById("SongName").innerHTML = msg["track"]["name"];
+            document.getElementById("SongDescription").innerHTML = "By " + msg["track"]["artist"]["name"]
+            document.getElementById("albumcover").src = "/api/current-image"
+            populateQueue(JSON.parse(msg.queue));
+        } else {
+            document.getElementById("albumcover").src = "/api/current-image"
+        }
     };
     connection.onclose = function m(uri, protocol) {
         console.log("on close");

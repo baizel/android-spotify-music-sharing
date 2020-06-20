@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Web Player</title>
+    <link rel="stylesheet" href="materialize_min.css">
+    <link href="icon.css" rel="stylesheet">
+    <script>
+        window.onload = function (event) {
+
+        };
+    </script>
+</head>
+<style>
+    html, .valign-wrapper {
+        height: 100%;
+    }
+
+    body {
+        padding: 0;
+        margin: 0;
+        height: 100%;
+        box-sizing: border-box;
+        background-size: cover;
+        background-image: linear-gradient(45deg, #ff9b9c 0%, #ffd4a7 100%);
+        background-repeat: no-repeat;
+        font-family: "Roboto", sans-serif;
+    }
+
+    #player-body {
+        user-select: none;
+        border-radius: 15px;
+        box-shadow: 0 15px 20px 0 #c58371;
+        background-color: rgba(255, 246, 231, 0.39);
+    }
+
+    .card {
+        min-height: 65vh;
+    }
+    .card-content {
+        min-height: 65vh;
+    }
+    .card-action {
+        background-color: initial !important;
+    }
+
+    .top-bar {
+        margin-top: 50px;
+    }
+
+    #player-control {
+        left: 0;
+        width: 100%;
+        bottom: 0;
+    }
+
+    input[type=range] {
+        border: 0;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+        background-color: white;
+    }
+
+    input[type=range]::-moz-range-thumb {
+        background-color: white;
+    }
+
+    input[type=range]::-ms-thumb {
+        background-color: white;
+    }
+
+    input[type=range] + .thumb.active .value {
+        color: white;
+    }
+
+    .card .card-action {
+        border-top: 0;
+    }
+
+    .song-info {
+        margin: 20px;
+    }
+
+    /*#SongName{*/
+    /*    font-size: 5em;*/
+    /*}*/
+    /*#SongDescription {*/
+    /*    font-size: 2em;*/
+    /*}*/
+
+</style>
+<body>
+<div class="valign-wrapper">
+    <div class="container">
+        <div class="no-margin row">
+            <div class="col offset-l3 l6 s12">
+                <div class="card" id="player-body">
+                    <div class="card-content">
+                        <div class="row">
+                            <div class="top-bar">
+                                <div class="col s1 center">
+                                    <i class="material-icons small white-text">queue_music</i>
+                                </div>
+                                <div class="col offset-s9 s1 offset-s1 right">
+                                    <i class="material-icons small white-text">add</i>
+                                </div>
+                            </div>
+                            <div class="center col s12">
+                                <img id= "albumcover" src="https://via.placeholder.com/250" width="400px" alt="album cover"
+                                     class="circle responsive-img">
+                            </div>
+                            <div class="center col s12 row song-info">
+                                <div class="s12 white-text center">
+                                    <h2 id="SongName">{{SongName}}</h2>
+                                    <h4 id="SongDescription">{{SongDescription}}</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-action">
+                        <div id="player-control">
+                            <div class="row">
+                                <div>
+                                    <p class="col s1 center white-text">0:00</p>
+                                    <p class="col s10 range-field">
+                                        <input type="range" min="0" max="1000" id="seekAudio" value="0"/>
+                                    </p>
+                                    <p class="col s1 center white-text">-:--</p>
+
+                                </div>
+                                <div class="center col s4">
+                                    <a href="#" onclick="onPrevious()"><i class="white-text medium material-icons">skip_previous</i></a>
+                                </div>
+                                <div class="center col s4">
+                                    <a href="#" onclick="onPlay()"><i class="white-text medium material-icons"
+                                                                      id="PlayIcon">play_arrow</i></a>
+                                </div>
+                                <div class="center col s4">
+                                    <a href="#" onclick="onNext()"><i
+                                            class="white-text medium material-icons">skip_next</i></a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="jquery_min.js"></script>
+<script src="materialize.js"></script>
+<script src="clientcommunication.js"></script>
+</body>
+</html>
