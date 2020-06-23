@@ -1,8 +1,8 @@
-package com.baizelmathew.spotifycontroller.web.router.resource;
+package com.baizelmathew.spotifycontroller.web_interface_manager.router.resource;
 
 import android.graphics.Bitmap;
 
-import com.baizelmathew.spotifycontroller.web.utils.MIME;
+import com.baizelmathew.spotifycontroller.webserver.utils.MIME;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

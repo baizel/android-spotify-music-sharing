@@ -7,9 +7,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.widget.Toast;
 
-import com.baizelmathew.spotifycontroller.service.ForeGroundServerService;
-import com.baizelmathew.spotifycontroller.web.WebServer;
-
 import java.util.Objects;
 
 /**
@@ -25,9 +22,9 @@ public class ServiceBroadcastReceiver extends android.content.BroadcastReceiver 
             case ForeGroundServerService.ACTION_START_FOREGROUND_SERVICE:
                 startForeGroundService(context);
                 break;
-            case WebServer.ACTION_PAUSE_ALL_INCOMING_REQUEST:
-                WebServer.setIncomingPaused(intent.getBooleanExtra(WebServer.EXTRA_PAUSE_INCOMING_REQUEST_STATE,false));
-                break;
+//            case WebServer.ACTION_PAUSE_ALL_INCOMING_REQUEST:
+//                WebServer.setIncomingPaused(intent.getBooleanExtra(WebServer.EXTRA_PAUSE_INCOMING_REQUEST_STATE,false));
+//                break;
             default:
                 break;
         }

@@ -8,15 +8,15 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
+import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
 
 import com.baizelmathew.spotifycontroller.service.ForeGroundServerService;
-import com.baizelmathew.spotifycontroller.spotifywrapper.Player;
 import com.baizelmathew.spotifycontroller.service.ServiceBroadcastReceiver;
+import com.baizelmathew.spotifycontroller.spotify_wrapper.Player;
 import com.google.gson.Gson;
 import com.jgabrielfreitas.core.BlurImageView;
 import com.spotify.protocol.client.CallResult;
@@ -25,9 +25,9 @@ import com.spotify.sdk.android.auth.AuthorizationClient;
 import com.spotify.sdk.android.auth.AuthorizationRequest;
 import com.spotify.sdk.android.auth.AuthorizationResponse;
 
-import static com.baizelmathew.spotifycontroller.spotifywrapper.Player.CLIENT_ID;
-import static com.baizelmathew.spotifycontroller.spotifywrapper.Player.REDIRECT_URI;
-import static com.baizelmathew.spotifycontroller.spotifywrapper.Player.REQUEST_CODE;
+import static com.baizelmathew.spotifycontroller.spotify_wrapper.Player.CLIENT_ID;
+import static com.baizelmathew.spotifycontroller.spotify_wrapper.Player.REDIRECT_URI;
+import static com.baizelmathew.spotifycontroller.spotify_wrapper.Player.REQUEST_CODE;
 
 /**
  * MainActivity shown to user
@@ -80,26 +80,28 @@ public class MainActivity extends AppCompatActivity {
             builder.setScopes(new String[]{"streaming"});
             AuthorizationRequest request = builder.build();
             AuthorizationClient.openLoginActivity(this, REQUEST_CODE, request);
-
-            broadcastForeGroundService(ForeGroundServerService.ACTION_START_FOREGROUND_SERVICE);
         }
 
     }
 
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
         super.onActivityResult(requestCode, resultCode, intent);
-
         // Check if result comes from the correct activity
         if (requestCode == REQUEST_CODE) {
             AuthorizationResponse response = AuthorizationClient.getResponse(resultCode, intent);
-
             switch (response.getType()) {
-                // Response was successful and contains auth token
                 case TOKEN:
                     Player.setAccessToken(response.getAccessToken());
+                    broadcastForeGroundService(ForeGroundServerService.ACTION_START_FOREGROUND_SERVICE);
                     break;
+                case CODE:
+                case EMPTY:
+                case ERROR:
+                case UNKNOWN:
+                    //intentional fall through
                 default:
-                    // Handle other cases
+                    //TODO:
+                    // Handle other state Not connected or no auth
             }
         }
     }

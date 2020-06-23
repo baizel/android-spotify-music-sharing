@@ -19,22 +19,14 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.widget.Toast;
 
 import com.baizelmathew.spotifycontroller.R;
-import com.baizelmathew.spotifycontroller.spotifywrapper.Player;
-import com.baizelmathew.spotifycontroller.web.utils.OnFailSocketCallBack;
-import com.baizelmathew.spotifycontroller.web.utils.OnEventCallback;
-import com.baizelmathew.spotifycontroller.web.WebServer;
+import com.baizelmathew.spotifycontroller.spotify_wrapper.Player;
+import com.baizelmathew.spotifycontroller.utils.OnEventCallback;
+import com.baizelmathew.spotifycontroller.web_interface_manager.WebPlayerManager;
 import com.google.gson.Gson;
-import com.spotify.android.appremote.api.Connector;
-import com.spotify.android.appremote.api.SpotifyAppRemote;
-import com.spotify.protocol.client.Subscription;
 import com.spotify.protocol.types.PlayerState;
 import com.spotify.protocol.types.Track;
 
-import org.java_websocket.WebSocket;
-import org.java_websocket.exceptions.WebsocketNotConnectedException;
-
 import java.io.IOException;
-import java.net.NoRouteToHostException;
 
 /**
  * This class is responsible for managing the web server in the background.
@@ -55,14 +47,12 @@ public class ForeGroundServerService extends Service {
     private static final int ONGOING_NOTIFICATION_ID = 1234;
     private static final String ACTION_STOP_FOREGROUND_SERVICE_ID = "ACTION_STOP_FOREGROUND_SERVICE_ID";
 
-    private WebServer webServer;
+    private WebPlayerManager playerManager;
     private Player player;
     private ServiceBroadcastReceiver serviceBroadcastReceiver = new ServiceBroadcastReceiver();
-    private OnFailSocketCallBack onFailSocketCallBack;
 
     public ForeGroundServerService() {
         //https://developer.android.com/guide/components/services
-        onFailSocketCallBack = getOnFailSocketCallBack();
     }
 
     /**
@@ -72,8 +62,6 @@ public class ForeGroundServerService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        setWebServer();
-
         IntentFilter stopServiceFilter = new IntentFilter(ACTION_STOP_FOREGROUND_SERVICE);
         stopServiceFilter.addAction(ACTION_STOP_FOREGROUND_SERVICE);
         this.registerReceiver(serviceBroadcastReceiver, stopServiceFilter);
@@ -98,8 +86,14 @@ public class ForeGroundServerService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        player.disconnect();
-        webServer.stop();
+        if (playerManager != null) {
+            playerManager.stop();
+            playerManager = null;
+        }
+        if (player != null) {
+            player.disconnect();
+            player = null;
+        }
         this.unregisterReceiver(serviceBroadcastReceiver);
         debugToast("Stopping Web Server");
 
@@ -132,55 +126,6 @@ public class ForeGroundServerService extends Service {
                 .build();
     }
 
-    private Subscription.EventCallback<PlayerState> getPlayerStateEventCallback() {
-        return new Subscription.EventCallback<PlayerState>() {
-            @Override
-            public void onEvent(PlayerState playerState) {
-                handlePlayerStateOnEvent(playerState);
-            }
-        };
-    }
-
-    private Connector.ConnectionListener getConnectionListener() {
-        return new Connector.ConnectionListener() {
-            @Override
-            public void onConnected(SpotifyAppRemote spotifyAppRemote) {
-                handleConnectionListnerOnConnected();
-            }
-
-            @Override
-            public void onFailure(Throwable throwable) {
-                handleConnectionListenerOnFail(throwable);
-            }
-        };
-    }
-
-    private void handleConnectionListenerOnFail(Throwable throwable) {
-        stopService();
-        debugToast("Service Not Started " + throwable.getLocalizedMessage());
-    }
-
-    private void handlePlayerStateOnEvent(PlayerState playerState) {
-        sendBroadcastAddress(webServer.getHttpAddress());
-        sendBroadcastTrack(playerState.track);
-        try {
-            webServer.startServer();
-        } catch (IOException | WebsocketNotConnectedException e) {
-            e.printStackTrace();
-            stopService();
-        }
-    }
-
-    private void handleConnectionListnerOnConnected() {
-        webServer.startListening();
-        player.getPlayerState(new OnEventCallback() {
-            @Override
-            public void onEvent(PlayerState playerState) {
-                sendBroadcastTrack(playerState.track);
-            }
-        });
-    }
-
     private void startForegroundService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             startMyOwnForeground();
@@ -188,21 +133,30 @@ public class ForeGroundServerService extends Service {
             startForeground(ONGOING_NOTIFICATION_ID, buildNotification());
     }
 
-    private void setWebServer() {
+    private void startWebService() {
         try {
-            webServer = WebServer.getInstance();
-            webServer.setCallBack(onFailSocketCallBack);
-            webServer.init();
-        } catch (NoRouteToHostException e) {
+            playerManager = new WebPlayerManager();
+            sendBroadcastAddress(playerManager.getURL());
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     private void initSpotifyPlayerConnection() {
         player = Player.getInstance();
-        Subscription.EventCallback<PlayerState> playerStateEventCallback = getPlayerStateEventCallback();
-        Connector.ConnectionListener connectionListener = getConnectionListener();
-        player.connect(this, connectionListener, playerStateEventCallback);
+        player.connectToSpotifyIPC(this, new OnEventCallback<PlayerState>() {
+            @Override
+            public void onResult(PlayerState result) {
+                sendBroadcastTrack(result.track);
+                startWebService();
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+                stopService();
+                debugToast("Service Not Started " + throwable.getLocalizedMessage());
+            }
+        });
     }
 
     private void debugToast(String s) {
@@ -246,19 +200,5 @@ public class ForeGroundServerService extends Service {
         manager.createNotificationChannel(chan);
         Notification notification = buildNotification();
         startForeground(ONGOING_NOTIFICATION_ID, notification);
-    }
-
-    private OnFailSocketCallBack getOnFailSocketCallBack() {
-        return new OnFailSocketCallBack() {
-            @Override
-            public void onClose(WebSocket conn, int code, String reason, boolean remote) {
-                //TODO: Shows disconnected users
-            }
-
-            @Override
-            public void onError(WebSocket conn, Exception ex) {
-                // stopService();
-            }
-        };
     }
 }

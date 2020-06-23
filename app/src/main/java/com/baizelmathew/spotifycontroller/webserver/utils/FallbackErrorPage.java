@@ -1,7 +1,7 @@
 /*
   @Author: Baizel Mathew
  */
-package com.baizelmathew.spotifycontroller.web.utils;
+package com.baizelmathew.spotifycontroller.webserver.utils;
 
 /**
  * Static page as a last resort if reading in file fails.
