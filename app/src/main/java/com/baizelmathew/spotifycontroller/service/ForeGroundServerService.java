@@ -23,6 +23,7 @@ import com.baizelmathew.spotifycontroller.spotify_wrapper.Player;
 import com.baizelmathew.spotifycontroller.utils.OnEventCallback;
 import com.baizelmathew.spotifycontroller.web_interface_manager.WebPlayerManager;
 import com.google.gson.Gson;
+import com.spotify.protocol.client.Subscription;
 import com.spotify.protocol.types.PlayerState;
 import com.spotify.protocol.types.Track;
 
@@ -147,6 +148,12 @@ public class ForeGroundServerService extends Service {
         player.connectToSpotifyIPC(this, new OnEventCallback<PlayerState>() {
             @Override
             public void onResult(PlayerState result) {
+                player.getSubscriptionPlayerState().setEventCallback(new Subscription.EventCallback<PlayerState>() {
+                    @Override
+                    public void onEvent(PlayerState playerState) {
+                        sendBroadcastTrack(playerState.track);
+                    }
+                });
                 sendBroadcastTrack(result.track);
                 startWebService();
             }
