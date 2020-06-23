@@ -43,6 +43,9 @@ public class ServerRouter implements Router {
                 return new BitmapResource(Player.getInstance().getCurrentImageOfTrackBlocking(5, TimeUnit.SECONDS));
             case "/api/spotify/state":
                 return new JSONResource(Player.getInstance().getPlayerStateBlocking(5, TimeUnit.SECONDS));
+            case "/api/spotify/token":
+                //TODO: build a proxy for this, not the best idea to access via api
+                return new JSONResource("{\"result\": \"" + Player.getAccessToken() + "\"}");
             case "/api/web/addr":
                 if (wsAddr != null) {
                     return new JSONResource("{\"result\": \"" + wsAddr + "\"}");

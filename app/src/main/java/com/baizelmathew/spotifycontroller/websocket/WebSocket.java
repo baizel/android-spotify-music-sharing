@@ -55,23 +55,11 @@ public class WebSocket extends WebSocketServer {
         return this;
     }
 
-//    /**
-//     * broadcasts the state of the of the spotify player when update occurs
-//     */
-//    public void startBroadcastingSpotifyEvents() {
-//        Player.getInstance().getSubscriptionPlayerState().setEventCallback(new Subscription.EventCallback<PlayerState>() {
-//            @Override
-//            public void onEvent(PlayerState playerState) {
-//                initiateBroadCastOfState(playerState);
-//            }
-//        });
-//    }
-
     @Override
     public void onOpen(org.java_websocket.WebSocket conn, ClientHandshake handshake) {
         Log.d(TAG, "new connection to " + conn.getRemoteSocketAddress());
         allConnectionStatus.put(conn.getRemoteSocketAddress(), Status.OPEN);
-        callback.onOpen(conn,handshake);
+        callback.onOpen(conn, handshake);
 //        broadcastState();
     }
 
@@ -92,7 +80,8 @@ public class WebSocket extends WebSocketServer {
     @Override
     public void onError(org.java_websocket.WebSocket conn, Exception ex) {
         Log.d(TAG, "Error" + ex.getLocalizedMessage());
-        allConnectionStatus.put(conn.getRemoteSocketAddress(), Status.ERROR);
+        if (conn != null)
+            allConnectionStatus.put(conn.getRemoteSocketAddress(), Status.ERROR);
         callback.onError(conn, ex);
     }
 

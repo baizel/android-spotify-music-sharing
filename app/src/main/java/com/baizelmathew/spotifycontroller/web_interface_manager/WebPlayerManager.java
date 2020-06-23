@@ -1,6 +1,7 @@
 package com.baizelmathew.spotifycontroller.web_interface_manager;
 
 import com.baizelmathew.spotifycontroller.spotify_wrapper.Player;
+import com.baizelmathew.spotifycontroller.utils.OnEventCallback;
 import com.baizelmathew.spotifycontroller.web_interface_manager.router.ServerRouter;
 import com.baizelmathew.spotifycontroller.webserver.HTTPServer;
 import com.baizelmathew.spotifycontroller.websocket.WebSocket;
@@ -9,6 +10,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.spotify.protocol.client.CallResult;
 import com.spotify.protocol.client.Subscription;
+import com.spotify.protocol.types.Empty;
 import com.spotify.protocol.types.PlayerState;
 
 import org.java_websocket.handshake.ClientHandshake;
@@ -22,8 +24,9 @@ public class WebPlayerManager {
     private static HTTPServer httpServer;
     private static WebSocket webSocketServer;
     private ServerRouter router;
+    private OnEventCallback<Empty> onError;
 
-    public WebPlayerManager() throws IOException {
+    public WebPlayerManager(OnEventCallback<Empty> onErrorCallback) throws IOException {
         router = new ServerRouter();
         httpServer = HTTPServer.getInstance(8080, router);
         webSocketServer = WebSocket.getInstance(httpServer.getBindAddr(), 6969);
@@ -32,6 +35,7 @@ public class WebPlayerManager {
         httpServer.start();
         webSocketServer.start();
         subscribeToSpotifyStateChange();
+        this.onError = onErrorCallback;
     }
 
     public void stop() {
@@ -73,8 +77,8 @@ public class WebPlayerManager {
             }
 
             @Override
-            public void onError(org.java_websocket.WebSocket conn, Exception ex) {
-                //ignore?
+            public void onError(org.java_websocket.WebSocket conn, Exception ex)  {
+                onError.onFailure(ex);
             }
         };
     }
@@ -137,6 +141,9 @@ public class WebPlayerManager {
                 String uri = msg.getString("uri");
                 player.addToQueue(uri);
                 break;
+            case "seek":
+                long pos = msg.getLong("position");
+                player.seekTo(pos);
         }
     }
 

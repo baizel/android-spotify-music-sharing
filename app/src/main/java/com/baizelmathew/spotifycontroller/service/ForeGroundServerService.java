@@ -24,6 +24,7 @@ import com.baizelmathew.spotifycontroller.utils.OnEventCallback;
 import com.baizelmathew.spotifycontroller.web_interface_manager.WebPlayerManager;
 import com.google.gson.Gson;
 import com.spotify.protocol.client.Subscription;
+import com.spotify.protocol.types.Empty;
 import com.spotify.protocol.types.PlayerState;
 import com.spotify.protocol.types.Track;
 
@@ -136,7 +137,18 @@ public class ForeGroundServerService extends Service {
 
     private void startWebService() {
         try {
-            playerManager = new WebPlayerManager();
+            playerManager = new WebPlayerManager(new OnEventCallback<Empty>() {
+                @Override
+                public void onResult(Empty result) {
+                    //ignore
+                }
+
+                @Override
+                public void onFailure(Throwable ex) {
+                    sendBroadcastAddress("Error with serer " + ex.getLocalizedMessage());
+                    stopService();
+                }
+            });
             sendBroadcastAddress(playerManager.getURL());
         } catch (IOException e) {
             e.printStackTrace();
@@ -148,18 +160,13 @@ public class ForeGroundServerService extends Service {
         player.connectToSpotifyIPC(this, new OnEventCallback<PlayerState>() {
             @Override
             public void onResult(PlayerState result) {
-                player.getSubscriptionPlayerState().setEventCallback(new Subscription.EventCallback<PlayerState>() {
-                    @Override
-                    public void onEvent(PlayerState playerState) {
-                        sendBroadcastTrack(playerState.track);
-                    }
-                });
                 sendBroadcastTrack(result.track);
                 startWebService();
             }
 
             @Override
             public void onFailure(Throwable throwable) {
+                sendBroadcastAddress("Error with serer " + throwable.getLocalizedMessage());
                 stopService();
                 debugToast("Service Not Started " + throwable.getLocalizedMessage());
             }

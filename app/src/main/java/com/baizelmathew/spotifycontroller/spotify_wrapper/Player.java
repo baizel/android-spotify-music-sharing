@@ -43,11 +43,13 @@ public class Player {
         Player.accessToken = accessToken;
     }
 
-    public static String getAccessToken() {
-        return accessToken;
+    public static String getAccessToken() throws NoSuchFieldException {
+        if (accessToken != null)
+            return accessToken;
+        throw new NoSuchFieldException("Access token not set yet");
     }
 
-    public static Player getInstance() {
+    public static synchronized Player getInstance() {
         if (instance == null) {
             instance = new Player();
         }
@@ -98,6 +100,7 @@ public class Player {
 
     public void disconnect() {
         SpotifyAppRemote.disconnect(spotifyRemoteRef);
+        Log.d("Spotify", "Disconnected");
         spotifyRemoteRef = null;
     }
 
@@ -141,6 +144,10 @@ public class Player {
         return spotifyRemoteRef.getPlayerApi().resume();
     }
 
+    public CallResult<Empty> seekTo(long pos) {
+        return spotifyRemoteRef.getPlayerApi().seekTo(pos);
+    }
+
     public CallResult<Empty> addToQueue(String uri) {
         userQueue.addToQueue(uri);
         return spotifyRemoteRef.getPlayerApi().queue(uri);
@@ -166,5 +173,4 @@ public class Player {
     private void onEventHandler(PlayerState playerState) {
         updateUserQueue(playerState);
     }
-
 }

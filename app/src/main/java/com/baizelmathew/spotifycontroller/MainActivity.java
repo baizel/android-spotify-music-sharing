@@ -67,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
                     new BroadcastReceiver() {
                         @Override
                         public void onReceive(Context context, Intent intent) {
-                            updateLink("Server Has stopped, Please start manually");
+//                            updateLink("Server Has stopped, Please start manually");
                         }
                     }, new IntentFilter(ForeGroundServerService.ACTION_SERVICE_STOPPED)
             );
