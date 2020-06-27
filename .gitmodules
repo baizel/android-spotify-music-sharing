@@ -1,3 +1,3 @@
-[submodule "app/src/main/res/raw"]
-	path = app/src/main/res/raw
-	url = git@github.com:baizel/spotify-web-ui.git
+[submodule "web-ui-lib"]
+	path = web-ui-lib
+	url = https://github.com/baizel/spotify-web-ui.git

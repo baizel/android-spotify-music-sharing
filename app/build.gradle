@@ -39,6 +39,7 @@ dependencies {
     implementation 'org.nanohttpd:nanohttpd:2.2.0'
 
     implementation project(':spotify-app-remote-release-0.6.1')
+    implementation project(':web-ui-lib')
     implementation 'com.spotify.android:spotify-auth-release:1.2.3@aar'
     implementation "com.google.code.gson:gson:2.8.5"
 
