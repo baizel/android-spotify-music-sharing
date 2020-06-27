@@ -34,6 +34,7 @@ public class Player {
     private static SpotifyAppRemote spotifyRemoteRef = null;
     private static String accessToken = null;
     private static UserQueue userQueue = null;
+    private boolean isInit = false;
 
     private Player() {
         userQueue = new UserQueue();
@@ -49,9 +50,20 @@ public class Player {
         throw new NoSuchFieldException("Access token not set yet");
     }
 
-    public static synchronized Player getInstance() {
+    public static synchronized Player getRawInstance() {
         if (instance == null) {
             instance = new Player();
+        }
+        return instance;
+    }
+
+    public static synchronized Player getInitializedInstance() throws IllegalStateException{
+        if (instance != null) {
+           if(!instance.isInit){
+               throw new IllegalStateException("Init method not called yet!, Initialize Player first");
+           }
+        } else {
+            throw new IllegalStateException("Init method not called yet!, Initialize Player first");
         }
         return instance;
     }
@@ -63,7 +75,7 @@ public class Player {
      * @param context
      * @param playerStateResultCallback
      */
-    public void connectToSpotifyIPC(Context context, final OnEventCallback<PlayerState> playerStateResultCallback) {
+    public void init(Context context, final OnEventCallback<PlayerState> playerStateResultCallback) {
         if (spotifyRemoteRef == null || !spotifyRemoteRef.isConnected()) {
             ConnectionParams connectionParams = new ConnectionParams.Builder(CLIENT_ID)
                     .setRedirectUri(REDIRECT_URI)
@@ -73,6 +85,7 @@ public class Player {
                 @Override
                 public void onConnected(SpotifyAppRemote spotifyAppRemote) {
                     spotifyRemoteRef = spotifyAppRemote;
+                    isInit = true;
                     spotifyRemoteRef.getPlayerApi().subscribeToPlayerState().setEventCallback(new Subscription.EventCallback<PlayerState>() {
                         @Override
                         public void onEvent(PlayerState playerState) {
@@ -92,16 +105,16 @@ public class Player {
                 public void onFailure(Throwable throwable) {
                     playerStateResultCallback.onFailure(throwable);
                     Log.d(TAG, "Failed to Connect to Spotify");
-
                 }
             });
         }
     }
 
-    public void disconnect() {
+    public void close() {
         SpotifyAppRemote.disconnect(spotifyRemoteRef);
         Log.d("Spotify", "Disconnected");
         spotifyRemoteRef = null;
+        isInit = false;
     }
 
     public Bitmap getCurrentImageOfTrackBlocking(long timeout, TimeUnit timeUnit) throws Throwable {

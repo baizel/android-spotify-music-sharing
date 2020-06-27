@@ -23,7 +23,6 @@ import com.baizelmathew.spotifycontroller.spotify_wrapper.Player;
 import com.baizelmathew.spotifycontroller.utils.OnEventCallback;
 import com.baizelmathew.spotifycontroller.web_interface_manager.WebPlayerManager;
 import com.google.gson.Gson;
-import com.spotify.protocol.client.Subscription;
 import com.spotify.protocol.types.Empty;
 import com.spotify.protocol.types.PlayerState;
 import com.spotify.protocol.types.Track;
@@ -93,7 +92,7 @@ public class ForeGroundServerService extends Service {
             playerManager = null;
         }
         if (player != null) {
-            player.disconnect();
+            player.close();
             player = null;
         }
         this.unregisterReceiver(serviceBroadcastReceiver);
@@ -151,13 +150,13 @@ public class ForeGroundServerService extends Service {
             });
             sendBroadcastAddress(playerManager.getURL());
         } catch (IOException e) {
-            e.printStackTrace();
+            stopService();
         }
     }
 
     private void initSpotifyPlayerConnection() {
-        player = Player.getInstance();
-        player.connectToSpotifyIPC(this, new OnEventCallback<PlayerState>() {
+        player = Player.getRawInstance();
+        player.init(this.getApplicationContext(), new OnEventCallback<PlayerState>() {
             @Override
             public void onResult(PlayerState result) {
                 sendBroadcastTrack(result.track);
@@ -166,7 +165,7 @@ public class ForeGroundServerService extends Service {
 
             @Override
             public void onFailure(Throwable throwable) {
-                sendBroadcastAddress("Error with serer " + throwable.getLocalizedMessage());
+                sendBroadcastAddress("Error with server " + throwable.getLocalizedMessage());
                 stopService();
                 debugToast("Service Not Started " + throwable.getLocalizedMessage());
             }
@@ -174,7 +173,7 @@ public class ForeGroundServerService extends Service {
     }
 
     private void debugToast(String s) {
-        Toast toast = Toast.makeText(this, s, Toast.LENGTH_LONG);
+        Toast toast = Toast.makeText(this.getApplicationContext(), s, Toast.LENGTH_LONG);
         toast.show();
     }
 

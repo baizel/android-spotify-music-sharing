@@ -132,20 +132,25 @@ public class MainActivity extends AppCompatActivity {
      * @param t
      */
     private void updateInfo(Track t) {
-        if (t != null) {
-            Player.getInstance().getImageOfTrack(t, new CallResult.ResultCallback<Bitmap>() {
-                @Override
-                public void onResult(Bitmap bitmap) {
-                    BlurImageView img = findViewById(R.id.image);
-                    img.setImageBitmap(bitmap);
-                    img.setBlur(3);
-                }
-            });
-            TextView song = findViewById(R.id.songName);
-            song.setText(t.name);
-            TextView artist = findViewById(R.id.artist);
-            artist.setText(t.artist.name);
+        try {
+            Player player = Player.getInitializedInstance();
+            if (t != null) {
+                player.getImageOfTrack(t, new CallResult.ResultCallback<Bitmap>() {
+                    @Override
+                    public void onResult(Bitmap bitmap) {
+                        BlurImageView img = findViewById(R.id.image);
+                        img.setImageBitmap(bitmap);
+                        img.setBlur(3);
+                    }
+                });
+                TextView song = findViewById(R.id.songName);
+                song.setText(t.name);
+                TextView artist = findViewById(R.id.artist);
+                artist.setText(t.artist.name);
 
+            }
+        } catch (IllegalStateException e){
+            e.printStackTrace();
         }
     }
 }

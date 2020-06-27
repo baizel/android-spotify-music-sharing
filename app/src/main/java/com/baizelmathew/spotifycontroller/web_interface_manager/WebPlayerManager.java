@@ -20,28 +20,30 @@ import org.json.JSONObject;
 import java.io.IOException;
 
 public class WebPlayerManager {
-
     private static HTTPServer httpServer;
     private static WebSocket webSocketServer;
     private ServerRouter router;
-    private OnEventCallback<Empty> onError;
+    private OnEventCallback<Empty> onWebSocketError;
+    private Player player;
 
-    public WebPlayerManager(OnEventCallback<Empty> onErrorCallback) throws IOException {
-        router = new ServerRouter();
-        httpServer = HTTPServer.getInstance(8080, router);
-        webSocketServer = WebSocket.getInstance(httpServer.getBindAddr(), 6969);
-        router.setWsAddr(webSocketServer.getWsAddress());
-        webSocketServer.registerCallback(getWebSocketCallBack());
-        httpServer.start();
-        webSocketServer.start();
-        subscribeToSpotifyStateChange();
-        this.onError = onErrorCallback;
+    public WebPlayerManager(OnEventCallback<Empty> onWebSocketErrorCallback) throws IOException {
+        try {
+            router = new ServerRouter();
+            player = Player.getInitializedInstance();
+            startService();
+            this.onWebSocketError = onWebSocketErrorCallback;
+        } catch (IOException e) {
+            stop();
+            throw e;
+        }
     }
 
     public void stop() {
         try {
-            httpServer.stop();
-            webSocketServer.stop(1000); //timeout 1000 milliseconds for each peer
+            if (httpServer != null)
+                httpServer.stop();
+            if (webSocketServer != null)
+                webSocketServer.stop(1000); //timeout 1000 milliseconds for each peer
         } catch (InterruptedException e) {
             e.printStackTrace();
         } finally {
@@ -51,8 +53,24 @@ public class WebPlayerManager {
         }
     }
 
+    public void restartService() throws IOException {
+        stop();
+        startService();
+    }
+
+
     public String getURL() {
         return httpServer.getHttpUrl();
+    }
+
+    private void startService() throws IOException {
+        httpServer = HTTPServer.getInstance(8080, router);
+        webSocketServer = WebSocket.getInstance(httpServer.getBindAddr(), 6969);
+        router.setWsAddr(webSocketServer.getWsAddress());
+        webSocketServer.registerCallback(getWebSocketCallBack());
+        httpServer.start();
+        webSocketServer.start();
+        subscribeToSpotifyStateChange();
     }
 
     private WebSocketCallback getWebSocketCallBack() {
@@ -77,14 +95,14 @@ public class WebPlayerManager {
             }
 
             @Override
-            public void onError(org.java_websocket.WebSocket conn, Exception ex)  {
-                onError.onFailure(ex);
+            public void onError(org.java_websocket.WebSocket conn, Exception ex) {
+                onWebSocketError.onFailure(ex);
             }
         };
     }
 
     private void subscribeToSpotifyStateChange() {
-        Player.getInstance().getSubscriptionPlayerState().setEventCallback(new Subscription.EventCallback<PlayerState>() {
+        player.getSubscriptionPlayerState().setEventCallback(new Subscription.EventCallback<PlayerState>() {
             @Override
             public void onEvent(PlayerState playerState) {
                 flush(getJsonFormatOfPlayerState(playerState));
@@ -97,8 +115,7 @@ public class WebPlayerManager {
     }
 
     private void broadcastState() {
-        Player m = Player.getInstance();
-        m.getCurrentPlayerState(new CallResult.ResultCallback<PlayerState>() {
+        player.getCurrentPlayerState(new CallResult.ResultCallback<PlayerState>() {
             @Override
             public void onResult(PlayerState playerState) {
                 flush(getJsonFormatOfPlayerState(playerState));
@@ -109,13 +126,12 @@ public class WebPlayerManager {
 
     private String getJsonFormatOfPlayerState(PlayerState playerState) {
         JsonElement json = new Gson().toJsonTree(playerState);
-        json.getAsJsonObject().addProperty("queue", new Gson().toJson(Player.getInstance().getCustomQueue().getQueue()));
-        json.getAsJsonObject().addProperty("queueCurrentPos", new Gson().toJson(Player.getInstance().getCustomQueue().getCurrentPosition()));
+        json.getAsJsonObject().addProperty("queue", new Gson().toJson(player.getCustomQueue().getQueue()));
+        json.getAsJsonObject().addProperty("queueCurrentPos", new Gson().toJson(player.getCustomQueue().getCurrentPosition()));
         return json.toString();
     }
 
     private void handleRequestAction(org.java_websocket.WebSocket conn, String message) throws JSONException {
-        final Player player = Player.getInstance();
         JSONObject msg = new JSONObject(message);
         switch (msg.getString("payload")) {
             case "plsrespond":
