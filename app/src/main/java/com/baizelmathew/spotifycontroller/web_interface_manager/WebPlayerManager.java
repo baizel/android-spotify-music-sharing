@@ -6,10 +6,14 @@ import com.baizelmathew.spotifycontroller.web_interface_manager.router.ServerRou
 import com.baizelmathew.spotifycontroller.webserver.HTTPServer;
 import com.baizelmathew.spotifycontroller.websocket.WebSocket;
 import com.baizelmathew.spotifycontroller.websocket.WebSocketCallback;
-import com.google.gson.Gson;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.gson.JsonElement;
 import com.spotify.protocol.client.CallResult;
 import com.spotify.protocol.client.Subscription;
+import com.spotify.protocol.mappers.JsonMappingException;
+import com.spotify.protocol.mappers.jackson.JacksonMapper;
 import com.spotify.protocol.types.Empty;
 import com.spotify.protocol.types.PlayerState;
 
@@ -125,10 +129,11 @@ public class WebPlayerManager {
 
 
     private String getJsonFormatOfPlayerState(PlayerState playerState) {
-        JsonElement json = new Gson().toJsonTree(playerState);
-        json.getAsJsonObject().addProperty("queue", new Gson().toJson(player.getCustomQueue().getQueue()));
-        json.getAsJsonObject().addProperty("queueCurrentPos", new Gson().toJson(player.getCustomQueue().getCurrentPosition()));
-        return json.toString();
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode node = mapper.convertValue(playerState, ObjectNode.class);
+        node.set("queue", mapper.convertValue(player.getCustomQueue().getQueue(), JsonNode.class));
+        node.set("queueCurrentPos", mapper.convertValue(player.getCustomQueue().getCurrentPosition(), JsonNode.class));
+        return node.toString();
     }
 
     private void handleRequestAction(org.java_websocket.WebSocket conn, String message) throws JSONException {

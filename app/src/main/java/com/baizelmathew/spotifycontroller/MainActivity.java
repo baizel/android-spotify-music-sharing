@@ -17,7 +17,8 @@ import android.widget.TextView;
 import com.baizelmathew.spotifycontroller.service.ForeGroundServerService;
 import com.baizelmathew.spotifycontroller.service.ServiceBroadcastReceiver;
 import com.baizelmathew.spotifycontroller.spotify_wrapper.Player;
-import com.google.gson.Gson;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jgabrielfreitas.core.BlurImageView;
 import com.spotify.protocol.client.CallResult;
 import com.spotify.protocol.types.Track;
@@ -49,7 +50,12 @@ public class MainActivity extends AppCompatActivity {
                         @Override
                         public void onReceive(Context context, Intent intent) {
                             String track = intent.getStringExtra(ForeGroundServerService.EXTRA_TRACK);
-                            updateInfo(new Gson().fromJson(track, Track.class));
+                            ObjectMapper mapper = new ObjectMapper();
+                            try {
+                                updateInfo(mapper.readValue(track, Track.class));
+                            } catch (JsonProcessingException e) {
+                                e.printStackTrace();
+                            }
                         }
                     }, new IntentFilter(ForeGroundServerService.ACTION_TRACK_BROADCAST)
             );

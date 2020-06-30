@@ -8,13 +8,13 @@ import android.graphics.Bitmap;
 import android.util.Log;
 
 import com.baizelmathew.spotifycontroller.utils.OnEventCallback;
-import com.google.gson.Gson;
 import com.spotify.android.appremote.api.ConnectionParams;
 import com.spotify.android.appremote.api.Connector;
 import com.spotify.android.appremote.api.SpotifyAppRemote;
 import com.spotify.protocol.client.CallResult;
 import com.spotify.protocol.client.Result;
 import com.spotify.protocol.client.Subscription;
+import com.spotify.protocol.mappers.jackson.JacksonMapper;
 import com.spotify.protocol.types.Empty;
 import com.spotify.protocol.types.PlayerState;
 import com.spotify.protocol.types.Track;
@@ -57,11 +57,11 @@ public class Player {
         return instance;
     }
 
-    public static synchronized Player getInitializedInstance() throws IllegalStateException{
+    public static synchronized Player getInitializedInstance() throws IllegalStateException {
         if (instance != null) {
-           if(!instance.isInit){
-               throw new IllegalStateException("Init method not called yet!, Initialize Player first");
-           }
+            if (!instance.isInit) {
+                throw new IllegalStateException("Init method not called yet!, Initialize Player first");
+            }
         } else {
             throw new IllegalStateException("Init method not called yet!, Initialize Player first");
         }
@@ -80,6 +80,7 @@ public class Player {
             ConnectionParams connectionParams = new ConnectionParams.Builder(CLIENT_ID)
                     .setRedirectUri(REDIRECT_URI)
                     .showAuthView(true)
+                    .setJsonMapper(JacksonMapper.create())
                     .build();
             SpotifyAppRemote.connect(context, connectionParams, new Connector.ConnectionListener() {
                 @Override
@@ -136,7 +137,7 @@ public class Player {
     public String getPlayerStateBlocking(long timeout, TimeUnit timeUnit) throws Throwable {
         Result<PlayerState> playerState = spotifyRemoteRef.getPlayerApi().getPlayerState().await(timeout, timeUnit);
         if (playerState.isSuccessful()) {
-            return new Gson().toJson(playerState.getData());
+            return JacksonMapper.create().toJson(playerState.getData());
         }
         throw playerState.getError();
     }

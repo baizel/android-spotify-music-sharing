@@ -22,7 +22,8 @@ import com.baizelmathew.spotifycontroller.R;
 import com.baizelmathew.spotifycontroller.spotify_wrapper.Player;
 import com.baizelmathew.spotifycontroller.utils.OnEventCallback;
 import com.baizelmathew.spotifycontroller.web_interface_manager.WebPlayerManager;
-import com.google.gson.Gson;
+import com.spotify.protocol.mappers.JsonMappingException;
+import com.spotify.protocol.mappers.jackson.JacksonMapper;
 import com.spotify.protocol.types.Empty;
 import com.spotify.protocol.types.PlayerState;
 import com.spotify.protocol.types.Track;
@@ -195,7 +196,11 @@ public class ForeGroundServerService extends Service {
     private void sendBroadcastTrack(Track track) {
         if (track != null) {
             Intent intent = new Intent(ACTION_TRACK_BROADCAST);
-            intent.putExtra(EXTRA_TRACK, new Gson().toJson(track));
+            try {
+                intent.putExtra(EXTRA_TRACK, JacksonMapper.create().toJson(track));
+            } catch (JsonMappingException e) {
+                intent.putExtra(EXTRA_TRACK, "could not parse track info");
+            }
             LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
         }
     }
