@@ -19,14 +19,15 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.widget.Toast;
 
 import com.baizelmathew.spotifycontroller.R;
+import com.baizelmathew.spotifycontroller.eventbus_messeages.ServerAddressEvent;
+import com.baizelmathew.spotifycontroller.eventbus_messeages.enums.ServerState;
 import com.baizelmathew.spotifycontroller.spotify_wrapper.Player;
 import com.baizelmathew.spotifycontroller.utils.OnEventCallback;
 import com.baizelmathew.spotifycontroller.web_interface_manager.WebPlayerManager;
-import com.spotify.protocol.mappers.JsonMappingException;
-import com.spotify.protocol.mappers.jackson.JacksonMapper;
 import com.spotify.protocol.types.Empty;
 import com.spotify.protocol.types.PlayerState;
-import com.spotify.protocol.types.Track;
+
+import org.greenrobot.eventbus.EventBus;
 
 import java.io.IOException;
 
@@ -38,24 +39,19 @@ public class ForeGroundServerService extends Service {
     public static final String ACTION_STOP_FOREGROUND_SERVICE = "ACTION_STOP_FOREGROUND_SERVICE";
     public static final String ACTION_START_FOREGROUND_SERVICE = "ACTION_START_FOREGROUND_SERVICE";
 
-    public static final String ACTION_SERVER_ADDRESS_BROADCAST = ForeGroundServerService.class.getName() + "AddressBroadcast";
-    public static final String ACTION_TRACK_BROADCAST = ForeGroundServerService.class.getName() + "TrackBroadcast";
     public static final String ACTION_SERVICE_STOPPED = ForeGroundServerService.class.getName() + "Stopped";
-
-    public static final String EXTRA_SERVER_ADDRESS = "extra_server_address";
-    public static final String EXTRA_TRACK = "extra_track";
 
     private static final String NOTIFICATION_CHANNEL_ID = "dev.baizel.spot";
     private static final int ONGOING_NOTIFICATION_ID = 1234;
     private static final String ACTION_STOP_FOREGROUND_SERVICE_ID = "ACTION_STOP_FOREGROUND_SERVICE_ID";
 
     private WebPlayerManager playerManager;
-    private Player player;
     private ServiceBroadcastReceiver serviceBroadcastReceiver = new ServiceBroadcastReceiver();
 
     public ForeGroundServerService() {
         //https://developer.android.com/guide/components/services
     }
+
 
     /**
      * Initialises the web server and registers the stop service receiver.
@@ -67,7 +63,6 @@ public class ForeGroundServerService extends Service {
         IntentFilter stopServiceFilter = new IntentFilter(ACTION_STOP_FOREGROUND_SERVICE);
         stopServiceFilter.addAction(ACTION_STOP_FOREGROUND_SERVICE);
         this.registerReceiver(serviceBroadcastReceiver, stopServiceFilter);
-
         initSpotifyPlayerConnection();
         startForegroundService();
     }
@@ -81,7 +76,7 @@ public class ForeGroundServerService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
-        return START_NOT_STICKY;
+        return START_STICKY;
     }
 
 
@@ -92,13 +87,9 @@ public class ForeGroundServerService extends Service {
             playerManager.stop();
             playerManager = null;
         }
-        if (player != null) {
-            player.close();
-            player = null;
-        }
+        Player.close();
         this.unregisterReceiver(serviceBroadcastReceiver);
         debugToast("Stopping Web Server");
-
     }
 
     @Override
@@ -109,6 +100,7 @@ public class ForeGroundServerService extends Service {
     private void stopService() {
         Intent intent = new Intent(ACTION_SERVICE_STOPPED);
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+        stopForeground(true);
         stopSelf();
     }
 
@@ -145,30 +137,29 @@ public class ForeGroundServerService extends Service {
 
                 @Override
                 public void onFailure(Throwable ex) {
-                    sendBroadcastAddress("Error with serer " + ex.getLocalizedMessage());
+                    postSeverEvent(ServerState.STOPPED, "Error with server " + ex.getLocalizedMessage());
                     stopService();
                 }
             });
-            sendBroadcastAddress(playerManager.getURL());
+            postSeverEvent(ServerState.STARTED, playerManager.getURL());
         } catch (IOException e) {
+            postSeverEvent(ServerState.STOPPED, "Error with server " + e.getLocalizedMessage());
             stopService();
         }
     }
 
     private void initSpotifyPlayerConnection() {
-        player = Player.getRawInstance();
-        player.init(this.getApplicationContext(), new OnEventCallback<PlayerState>() {
+        Player.start(this.getApplicationContext(), new OnEventCallback<PlayerState>() {
             @Override
             public void onResult(PlayerState result) {
-                sendBroadcastTrack(result.track);
                 startWebService();
             }
 
             @Override
             public void onFailure(Throwable throwable) {
-                sendBroadcastAddress("Error with server " + throwable.getLocalizedMessage());
-                stopService();
                 debugToast("Service Not Started " + throwable.getLocalizedMessage());
+                postSeverEvent(ServerState.STOPPED, "Error with server " + throwable.getLocalizedMessage());
+                stopService();
             }
         });
     }
@@ -176,33 +167,6 @@ public class ForeGroundServerService extends Service {
     private void debugToast(String s) {
         Toast toast = Toast.makeText(this.getApplicationContext(), s, Toast.LENGTH_LONG);
         toast.show();
-    }
-
-    /**
-     * Method used to broadcast the web server address to anything listening.
-     * Used to retrieve the web server address by the main activity so it can be updated
-     * and shown to the user when the server is launched.
-     *
-     * @param serverLink as a http link
-     */
-    private void sendBroadcastAddress(String serverLink) {
-        if (serverLink != null) {
-            Intent intent = new Intent(ACTION_SERVER_ADDRESS_BROADCAST);
-            intent.putExtra(EXTRA_SERVER_ADDRESS, serverLink);
-            LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
-        }
-    }
-
-    private void sendBroadcastTrack(Track track) {
-        if (track != null) {
-            Intent intent = new Intent(ACTION_TRACK_BROADCAST);
-            try {
-                intent.putExtra(EXTRA_TRACK, JacksonMapper.create().toJson(track));
-            } catch (JsonMappingException e) {
-                intent.putExtra(EXTRA_TRACK, "could not parse track info");
-            }
-            LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
-        }
     }
 
     private void startMyOwnForeground() {
@@ -218,5 +182,10 @@ public class ForeGroundServerService extends Service {
         manager.createNotificationChannel(chan);
         Notification notification = buildNotification();
         startForeground(ONGOING_NOTIFICATION_ID, notification);
+    }
+
+    private void postSeverEvent(ServerState state, String data) {
+        EventBus.getDefault().postSticky(new ServerAddressEvent(state, data));
+
     }
 }

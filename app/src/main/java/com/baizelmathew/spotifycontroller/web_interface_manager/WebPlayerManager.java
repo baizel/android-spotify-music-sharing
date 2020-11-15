@@ -1,22 +1,17 @@
 package com.baizelmathew.spotifycontroller.web_interface_manager;
 
-import com.baizelmathew.spotifycontroller.spotify_wrapper.Player;
+import com.baizelmathew.spotifycontroller.eventbus_messeages.enums.PlayerActions;
+import com.baizelmathew.spotifycontroller.eventbus_messeages.PlayerActionEvent;
+import com.baizelmathew.spotifycontroller.eventbus_messeages.PlayerStateEvent;
 import com.baizelmathew.spotifycontroller.utils.OnEventCallback;
 import com.baizelmathew.spotifycontroller.web_interface_manager.router.ServerRouter;
 import com.baizelmathew.spotifycontroller.webserver.HTTPServer;
 import com.baizelmathew.spotifycontroller.websocket.WebSocket;
 import com.baizelmathew.spotifycontroller.websocket.WebSocketCallback;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.gson.JsonElement;
-import com.spotify.protocol.client.CallResult;
-import com.spotify.protocol.client.Subscription;
-import com.spotify.protocol.mappers.JsonMappingException;
-import com.spotify.protocol.mappers.jackson.JacksonMapper;
 import com.spotify.protocol.types.Empty;
-import com.spotify.protocol.types.PlayerState;
 
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
 import org.java_websocket.handshake.ClientHandshake;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -26,14 +21,12 @@ import java.io.IOException;
 public class WebPlayerManager {
     private static HTTPServer httpServer;
     private static WebSocket webSocketServer;
-    private ServerRouter router;
-    private OnEventCallback<Empty> onWebSocketError;
-    private Player player;
+    private final ServerRouter router;
+    private final OnEventCallback<Empty> onWebSocketError;
 
     public WebPlayerManager(OnEventCallback<Empty> onWebSocketErrorCallback) throws IOException {
         try {
             router = new ServerRouter();
-            player = Player.getInitializedInstance();
             startService();
             this.onWebSocketError = onWebSocketErrorCallback;
         } catch (IOException e) {
@@ -54,6 +47,7 @@ public class WebPlayerManager {
             httpServer = null;
             webSocketServer = null;
             router.setWsAddr(null);
+            EventBus.getDefault().unregister(this);
         }
     }
 
@@ -74,7 +68,7 @@ public class WebPlayerManager {
         webSocketServer.registerCallback(getWebSocketCallBack());
         httpServer.start();
         webSocketServer.start();
-        subscribeToSpotifyStateChange();
+        registerToEventBus();
     }
 
     private WebSocketCallback getWebSocketCallBack() {
@@ -105,67 +99,43 @@ public class WebPlayerManager {
         };
     }
 
-    private void subscribeToSpotifyStateChange() {
-        player.getSubscriptionPlayerState().setEventCallback(new Subscription.EventCallback<PlayerState>() {
-            @Override
-            public void onEvent(PlayerState playerState) {
-                flush(getJsonFormatOfPlayerState(playerState));
-            }
-        });
+    private void registerToEventBus() {
+        EventBus.getDefault().register(this);
+    }
+
+    @Subscribe
+    public void subscribeToPlayerState(PlayerStateEvent event) {
+        flush(event.getJsonData());
     }
 
     private void flush(String data) {
-        webSocketServer.broadcast(data);
+        if (webSocketServer != null)
+            webSocketServer.broadcast(data);
     }
 
     private void broadcastState() {
-        player.getCurrentPlayerState(new CallResult.ResultCallback<PlayerState>() {
-            @Override
-            public void onResult(PlayerState playerState) {
-                flush(getJsonFormatOfPlayerState(playerState));
-            }
-        });
-    }
-
-
-    private String getJsonFormatOfPlayerState(PlayerState playerState) {
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectNode node = mapper.convertValue(playerState, ObjectNode.class);
-        node.set("queue", mapper.convertValue(player.getCustomQueue().getQueue(), JsonNode.class));
-        node.set("queueCurrentPos", mapper.convertValue(player.getCustomQueue().getCurrentPosition(), JsonNode.class));
-        return node.toString();
+        PlayerStateEvent state = EventBus.getDefault().getStickyEvent(PlayerStateEvent.class);
+        if (state != null) {
+            flush(state.getJsonData());
+        }
     }
 
     private void handleRequestAction(org.java_websocket.WebSocket conn, String message) throws JSONException {
         JSONObject msg = new JSONObject(message);
-        switch (msg.getString("payload")) {
-            case "plsrespond":
-                conn.send("is this working");
-            case "next":
-                player.nextTrack();
+        PlayerActions playerActions = PlayerActions.fromString(msg.getString("payload"));
+        String payload;
+        switch (playerActions) {
+            case ADD_TO_QUEUE:
+                payload = msg.getString("uri");
                 break;
-            case "previous":
-                player.previousTrack();
+            case SEEK_TO:
+                payload = msg.getString("position");
                 break;
-            case "play":
-                player.getCurrentPlayerState(new CallResult.ResultCallback<PlayerState>() {
-                    @Override
-                    public void onResult(PlayerState playerState) {
-                        if (playerState.isPaused)
-                            player.resume();
-                        else
-                            player.pause();
-                    }
-                });
-                break;
-            case "playUri":
-                String uri = msg.getString("uri");
-                player.addToQueue(uri);
-                break;
-            case "seek":
-                long pos = msg.getLong("position");
-                player.seekTo(pos);
+            default:
+                payload = "";
         }
+        PlayerActionEvent event = new PlayerActionEvent(playerActions, payload);
+        EventBus.getDefault().post(event);
     }
 
 }

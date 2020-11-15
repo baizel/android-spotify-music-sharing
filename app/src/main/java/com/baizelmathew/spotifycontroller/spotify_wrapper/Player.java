@@ -7,6 +7,9 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.util.Log;
 
+import com.baizelmathew.spotifycontroller.eventbus_messeages.PlayerActionEvent;
+import com.baizelmathew.spotifycontroller.eventbus_messeages.PlayerStateEvent;
+import com.baizelmathew.spotifycontroller.eventbus_messeages.TrackChangeEvent;
 import com.baizelmathew.spotifycontroller.utils.OnEventCallback;
 import com.spotify.android.appremote.api.ConnectionParams;
 import com.spotify.android.appremote.api.Connector;
@@ -15,9 +18,12 @@ import com.spotify.protocol.client.CallResult;
 import com.spotify.protocol.client.Result;
 import com.spotify.protocol.client.Subscription;
 import com.spotify.protocol.mappers.jackson.JacksonMapper;
-import com.spotify.protocol.types.Empty;
+import com.spotify.protocol.types.ImageUri;
 import com.spotify.protocol.types.PlayerState;
 import com.spotify.protocol.types.Track;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
 
 import java.util.concurrent.TimeUnit;
 
@@ -38,6 +44,7 @@ public class Player {
 
     private Player() {
         userQueue = new UserQueue();
+        EventBus.getDefault().register(this);
     }
 
     public static void setAccessToken(String accessToken) {
@@ -50,32 +57,15 @@ public class Player {
         throw new NoSuchFieldException("Access token not set yet");
     }
 
-    public static synchronized Player getRawInstance() {
+    private static synchronized Player getInstance() {
         if (instance == null) {
             instance = new Player();
         }
         return instance;
     }
 
-    public static synchronized Player getInitializedInstance() throws IllegalStateException {
-        if (instance != null) {
-            if (!instance.isInit) {
-                throw new IllegalStateException("Init method not called yet!, Initialize Player first");
-            }
-        } else {
-            throw new IllegalStateException("Init method not called yet!, Initialize Player first");
-        }
-        return instance;
-    }
-
-    /**
-     * Connects to Spotify if there has not already been a connection made.
-     * After connecting the SpotifyAppRemote will be passed can now register callback for updates on he app
-     *
-     * @param context
-     * @param playerStateResultCallback
-     */
-    public void init(Context context, final OnEventCallback<PlayerState> playerStateResultCallback) {
+    public static void start(Context context, final OnEventCallback<PlayerState> playerStateResultCallback) {
+        final Player instance = getInstance();
         if (spotifyRemoteRef == null || !spotifyRemoteRef.isConnected()) {
             ConnectionParams connectionParams = new ConnectionParams.Builder(CLIENT_ID)
                     .setRedirectUri(REDIRECT_URI)
@@ -86,11 +76,15 @@ public class Player {
                 @Override
                 public void onConnected(SpotifyAppRemote spotifyAppRemote) {
                     spotifyRemoteRef = spotifyAppRemote;
-                    isInit = true;
+                    instance.isInit = true;
                     spotifyRemoteRef.getPlayerApi().subscribeToPlayerState().setEventCallback(new Subscription.EventCallback<PlayerState>() {
                         @Override
                         public void onEvent(PlayerState playerState) {
-                            onEventHandler(playerState);
+                            instance.updateUserQueue(playerState);
+                            EventBus.getDefault().postSticky(new PlayerStateEvent(playerState, userQueue));
+                            EventBus.getDefault().postSticky(new TrackChangeEvent(playerState.track));
+                            Log.d(TAG, "Evntes emitted");
+
                         }
                     });
                     spotifyRemoteRef.getPlayerApi().getPlayerState().setResultCallback(new CallResult.ResultCallback<PlayerState>() {
@@ -111,30 +105,59 @@ public class Player {
         }
     }
 
-    public void close() {
-        SpotifyAppRemote.disconnect(spotifyRemoteRef);
-        Log.d("Spotify", "Disconnected");
-        spotifyRemoteRef = null;
-        isInit = false;
+    public static void close() {
+        EventBus.getDefault().unregister(getInstance());
+        if (spotifyRemoteRef != null) {
+            SpotifyAppRemote.disconnect(spotifyRemoteRef);
+            Log.d("Spotify", "Disconnected");
+            spotifyRemoteRef = null;
+        }
+        getInstance().isInit = false;
     }
 
-    public Bitmap getCurrentImageOfTrackBlocking(long timeout, TimeUnit timeUnit) throws Throwable {
+    @Subscribe
+    public void onPLayerEvent(PlayerActionEvent playerActionEvent) {
+        switch (playerActionEvent.getPlayerActions()) {
+            case TOGGLE_PLAY:
+                handlePlayState();
+                break;
+            case NEXT:
+                nextTrack();
+                break;
+            case PREVIOUS:
+                previousTrack();
+                break;
+            case ADD_TO_QUEUE:
+                addToQueue(playerActionEvent.getPayload());
+                break;
+            case SEEK_TO:
+                seekTo(Long.parseLong(playerActionEvent.getPayload()));
+                break;
+        }
+
+    }
+
+    public static Bitmap getCurrentImageOfTrackBlocking(long timeout, TimeUnit timeUnit) throws Throwable {
         Result<PlayerState> playerState = spotifyRemoteRef.getPlayerApi().getPlayerState().await(timeout, timeUnit);
         if (playerState.isSuccessful()) {
-            Result<Bitmap> imageResult = spotifyRemoteRef.getImagesApi().getImage(playerState.getData().track.imageUri).await(timeout, timeUnit);
-            if (imageResult.isSuccessful()) {
-                return imageResult.getData();
-            }
-            throw imageResult.getError();
+            return getImageWithUriBlocking(timeout, timeUnit, playerState.getData().track.imageUri);
         }
         throw playerState.getError();
     }
 
-    public void getImageOfTrack(Track t, CallResult.ResultCallback<Bitmap> callback) {
-        spotifyRemoteRef.getImagesApi().getImage(t.imageUri).setResultCallback(callback);
+    public static Bitmap getImageWithUriBlocking(long timeout, TimeUnit timeUnit, ImageUri uri) throws Throwable {
+        Result<Bitmap> imageResult = spotifyRemoteRef.getImagesApi().getImage(uri).await(timeout, timeUnit);
+        if (imageResult.isSuccessful()) {
+            return imageResult.getData();
+        }
+        throw imageResult.getError();
     }
 
-    public String getPlayerStateBlocking(long timeout, TimeUnit timeUnit) throws Throwable {
+    public static void getImageOfTrack(ImageUri uri, CallResult.ResultCallback<Bitmap> callback) {
+        spotifyRemoteRef.getImagesApi().getImage(uri).setResultCallback(callback);
+    }
+
+    public static String getPlayerStateBlocking(long timeout, TimeUnit timeUnit) throws Throwable {
         Result<PlayerState> playerState = spotifyRemoteRef.getPlayerApi().getPlayerState().await(timeout, timeUnit);
         if (playerState.isSuccessful()) {
             return JacksonMapper.create().toJson(playerState.getData());
@@ -142,37 +165,8 @@ public class Player {
         throw playerState.getError();
     }
 
-    public CallResult<Empty> nextTrack() {
-        return spotifyRemoteRef.getPlayerApi().skipNext();
-    }
-
-    public CallResult<Empty> previousTrack() {
-        return spotifyRemoteRef.getPlayerApi().skipPrevious();
-    }
-
-    public CallResult<Empty> pause() {
-        return spotifyRemoteRef.getPlayerApi().pause();
-    }
-
-    public CallResult<Empty> resume() {
-        return spotifyRemoteRef.getPlayerApi().resume();
-    }
-
-    public CallResult<Empty> seekTo(long pos) {
-        return spotifyRemoteRef.getPlayerApi().seekTo(pos);
-    }
-
-    public CallResult<Empty> addToQueue(String uri) {
-        userQueue.addToQueue(uri);
-        return spotifyRemoteRef.getPlayerApi().queue(uri);
-    }
-
-    public void getCurrentPlayerState(CallResult.ResultCallback<PlayerState> callback) {
+    public static void getCurrentPlayerState(CallResult.ResultCallback<PlayerState> callback) {
         spotifyRemoteRef.getPlayerApi().getPlayerState().setResultCallback(callback);
-    }
-
-    public Subscription<PlayerState> getSubscriptionPlayerState() {
-        return spotifyRemoteRef.getPlayerApi().subscribeToPlayerState();
     }
 
     public UserQueue getCustomQueue() {
@@ -183,8 +177,41 @@ public class Player {
         userQueue.onPlayerState(playerState);
     }
 
-
-    private void onEventHandler(PlayerState playerState) {
-        updateUserQueue(playerState);
+    private void nextTrack() {
+        spotifyRemoteRef.getPlayerApi().skipNext();
     }
+
+    private void previousTrack() {
+        spotifyRemoteRef.getPlayerApi().skipPrevious();
+    }
+
+    private void pause() {
+        spotifyRemoteRef.getPlayerApi().pause();
+    }
+
+    private void resume() {
+        spotifyRemoteRef.getPlayerApi().resume();
+    }
+
+    private void seekTo(long pos) {
+        spotifyRemoteRef.getPlayerApi().seekTo(pos);
+    }
+
+    private void addToQueue(String uri) {
+        userQueue.addToQueue(uri);
+        spotifyRemoteRef.getPlayerApi().queue(uri);
+    }
+
+    private void handlePlayState() {
+        getCurrentPlayerState(new CallResult.ResultCallback<PlayerState>() {
+            @Override
+            public void onResult(PlayerState playerState) {
+                if (playerState.isPaused)
+                    resume();
+                else
+                    pause();
+            }
+        });
+    }
+
 }

@@ -37,6 +37,7 @@ dependencies {
     implementation "android.arch.navigation:navigation-ui:$nav_version" // use -ktx for Kotlin
 
     implementation 'org.nanohttpd:nanohttpd:2.2.0'
+    implementation 'org.greenrobot:eventbus:3.2.0'
 
     implementation project(':spotify-app-remote-release-0.6.1')
     implementation project(':web-ui-lib')

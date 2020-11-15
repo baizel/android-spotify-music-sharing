@@ -7,7 +7,6 @@ import com.baizelmathew.spotifycontroller.web_interface_manager.router.resource.
 import com.baizelmathew.spotifycontroller.web_interface_manager.router.resource.PersistentResource;
 import com.baizelmathew.spotifycontroller.webserver.utils.FallbackErrorPage;
 import com.baizelmathew.spotifycontroller.webserver.utils.MIME;
-import com.baizelmathew.spotifycontroller.webserver.utils.Router;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -20,10 +19,8 @@ import static fi.iki.elonen.NanoHTTPD.newFixedLengthResponse;
 public class ServerRouter implements Router {
     private final static String BASE_PATH = "res/raw/";
     private String wsAddr;
-    private Player player;
 
     public ServerRouter() {
-        player = Player.getInitializedInstance();
     }
 
     private AbstractResource route(String path) throws Throwable {
@@ -42,9 +39,9 @@ public class ServerRouter implements Router {
             case "/icon.css":
                 return new PersistentResource(BASE_PATH + "icon.css", MIME.CSS);
             case "/api/spotify/cached-album-cover":
-                return new BitmapResource(player.getCurrentImageOfTrackBlocking(5, TimeUnit.SECONDS));
+                return new BitmapResource(Player.getCurrentImageOfTrackBlocking(5, TimeUnit.SECONDS));
             case "/api/spotify/state":
-                return new JSONResource(player.getPlayerStateBlocking(5, TimeUnit.SECONDS));
+                return new JSONResource(Player.getPlayerStateBlocking(5, TimeUnit.SECONDS));
             case "/api/spotify/token":
                 //TODO: build a proxy for this, not the best idea to access via api
                 return new JSONResource("{\"result\": \"" + Player.getAccessToken() + "\"}");

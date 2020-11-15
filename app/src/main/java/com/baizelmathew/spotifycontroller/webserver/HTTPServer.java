@@ -1,6 +1,6 @@
 package com.baizelmathew.spotifycontroller.webserver;
 
-import com.baizelmathew.spotifycontroller.webserver.utils.Router;
+import com.baizelmathew.spotifycontroller.web_interface_manager.router.Router;
 
 import java.net.NoRouteToHostException;
 
