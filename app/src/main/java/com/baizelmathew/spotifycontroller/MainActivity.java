@@ -3,105 +3,85 @@
  */
 package com.baizelmathew.spotifycontroller;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
+
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.graphics.Bitmap;
-import android.support.v4.content.LocalBroadcastManager;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
+import com.baizelmathew.spotifycontroller.eventbus_messeages.ServerAddressEvent;
+import com.baizelmathew.spotifycontroller.eventbus_messeages.TrackChangeEvent;
 import com.baizelmathew.spotifycontroller.service.ForeGroundServerService;
-import com.baizelmathew.spotifycontroller.spotifywrapper.Player;
-import com.baizelmathew.spotifycontroller.utils.ServiceBroadcastReceiver;
-import com.google.gson.Gson;
+import com.baizelmathew.spotifycontroller.service.ServiceBroadcastReceiver;
+import com.baizelmathew.spotifycontroller.spotify_wrapper.Player;
 import com.jgabrielfreitas.core.BlurImageView;
-import com.spotify.android.appremote.api.SpotifyAppRemote;
 import com.spotify.protocol.client.CallResult;
-import com.spotify.protocol.types.Image;
+import com.spotify.protocol.types.ImageUri;
 import com.spotify.protocol.types.Track;
-import com.spotify.sdk.android.authentication.AuthenticationClient;
-import com.spotify.sdk.android.authentication.AuthenticationRequest;
-import com.spotify.sdk.android.authentication.AuthenticationResponse;
+import com.spotify.sdk.android.auth.AuthorizationClient;
+import com.spotify.sdk.android.auth.AuthorizationRequest;
+import com.spotify.sdk.android.auth.AuthorizationResponse;
 
-import static com.baizelmathew.spotifycontroller.spotifywrapper.Player.CLIENT_ID;
-import static com.baizelmathew.spotifycontroller.spotifywrapper.Player.REDIRECT_URI;
-import static com.baizelmathew.spotifycontroller.spotifywrapper.Player.REQUEST_CODE;
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
-/**
- * MainActivity shown to user
- */
+import static com.baizelmathew.spotifycontroller.spotify_wrapper.Player.CLIENT_ID;
+import static com.baizelmathew.spotifycontroller.spotify_wrapper.Player.REDIRECT_URI;
+import static com.baizelmathew.spotifycontroller.spotify_wrapper.Player.REQUEST_CODE;
+
+
 public class MainActivity extends AppCompatActivity {
-    /**
-     * Creats the view and starts the foreground service
-     *
-     * @param savedInstanceState
-     */
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        EventBus.getDefault().register(this);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        EventBus.getDefault().unregister(this);
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         if (savedInstanceState == null) {
             //Register received to so the view can be updated with track info and server address
-            LocalBroadcastManager.getInstance(this).registerReceiver(
-                    new BroadcastReceiver() {
-                        @Override
-                        public void onReceive(Context context, Intent intent) {
-                            String track = intent.getStringExtra(ForeGroundServerService.EXTRA_TRACK);
-                            updateInfo(new Gson().fromJson(track, Track.class));
-                        }
-                    }, new IntentFilter(ForeGroundServerService.ACTION_TRACK_BROADCAST)
-            );
-
-            LocalBroadcastManager.getInstance(this).registerReceiver(
-                    new BroadcastReceiver() {
-                        @Override
-                        public void onReceive(Context context, Intent intent) {
-                            String link = intent.getStringExtra(ForeGroundServerService.EXTRA_SERVER_ADDRESS);
-                            updateLink(link);
-                        }
-                    }, new IntentFilter(ForeGroundServerService.ACTION_SERVER_ADDRESS_BROADCAST)
-            );
-            LocalBroadcastManager.getInstance(this).registerReceiver(
-                    new BroadcastReceiver() {
-                        @Override
-                        public void onReceive(Context context, Intent intent) {
-                            updateLink("Server Has stopped, Please start manually");
-                        }
-                    }, new IntentFilter(ForeGroundServerService.ACTION_SERVICE_STOPPED)
-            );
-
-
             //Authenticate the Spotify SDK and get token
-            AuthenticationRequest.Builder builder =
-                    new AuthenticationRequest.Builder(CLIENT_ID, AuthenticationResponse.Type.TOKEN, REDIRECT_URI);
+            AuthorizationRequest.Builder builder =
+                    new AuthorizationRequest.Builder(CLIENT_ID, AuthorizationResponse.Type.TOKEN, REDIRECT_URI);
 
             builder.setScopes(new String[]{"streaming"});
-            AuthenticationRequest request = builder.build();
-            AuthenticationClient.openLoginActivity(this, REQUEST_CODE, request);
-
-            broadcastForeGroundService(ForeGroundServerService.ACTION_START_FOREGROUND_SERVICE);
+            AuthorizationRequest request = builder.build();
+            AuthorizationClient.openLoginActivity(this, REQUEST_CODE, request);
         }
-
     }
 
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
         super.onActivityResult(requestCode, resultCode, intent);
-
         // Check if result comes from the correct activity
         if (requestCode == REQUEST_CODE) {
-            AuthenticationResponse response = AuthenticationClient.getResponse(resultCode, intent);
-
+            AuthorizationResponse response = AuthorizationClient.getResponse(resultCode, intent);
             switch (response.getType()) {
-                // Response was successful and contains auth token
                 case TOKEN:
                     Player.setAccessToken(response.getAccessToken());
+                    broadcastForeGroundService(ForeGroundServerService.ACTION_START_FOREGROUND_SERVICE);
                     break;
+                case CODE:
+                case EMPTY:
+                case ERROR:
+                case UNKNOWN:
+                    //intentional fall through
                 default:
-                    // Handle other cases
+                    //TODO:
+                    // Handle other state Not connected or no auth
             }
         }
     }
@@ -114,11 +94,6 @@ public class MainActivity extends AppCompatActivity {
         broadcastForeGroundService(ForeGroundServerService.ACTION_START_FOREGROUND_SERVICE);
     }
 
-    /**
-     * Starts server
-     *
-     * @param action
-     */
     private void broadcastForeGroundService(String action) {
         //start Server
         Intent startForeGroundServiceIntent = new Intent(this, ServiceBroadcastReceiver.class);
@@ -126,25 +101,31 @@ public class MainActivity extends AppCompatActivity {
         sendBroadcast(startForeGroundServiceIntent);
     }
 
-    /**
-     * Updates the server link
-     *
-     * @param address
-     */
-    private void updateLink(String address) {
+    @Subscribe(sticky = true, threadMode = ThreadMode.MAIN)
+    public void updateLink(ServerAddressEvent addressEvent) {
         TextView link = findViewById(R.id.link);
-        link.setText(address);
+        link.setText(addressEvent.getServerAddr());
     }
 
-    /**
-     * Updates the background image and track info on the app
-     *
-     * @param t
-     */
-    private void updateInfo(Track t) {
+    @Subscribe(sticky = true, threadMode = ThreadMode.MAIN)
+    public void onTrackChange(TrackChangeEvent trackEvent) {
+        try {
+            Track currentTrack = trackEvent.getCurrentTrack();
+            if (currentTrack != null) {
+                TextView song = findViewById(R.id.songName);
+                song.setText(currentTrack.name);
+                TextView artist = findViewById(R.id.artist);
+                artist.setText(currentTrack.artist.name);
+                updateImage(currentTrack.imageUri);
+            }
+        } catch (IllegalStateException e) {
+            e.printStackTrace();
+        }
+    }
 
-        if (t != null) {
-            Player.getInstance().getImageOfTrack(t, new CallResult.ResultCallback<Bitmap>() {
+    private void updateImage(ImageUri uri) {
+        try {
+            Player.getImageOfTrack(uri, new CallResult.ResultCallback<Bitmap>() {
                 @Override
                 public void onResult(Bitmap bitmap) {
                     BlurImageView img = findViewById(R.id.image);
@@ -152,11 +133,8 @@ public class MainActivity extends AppCompatActivity {
                     img.setBlur(3);
                 }
             });
-            TextView song = findViewById(R.id.songName);
-            song.setText(t.name);
-            TextView artist = findViewById(R.id.artist);
-            artist.setText(t.artist.name);
-
+        } catch (Throwable throwable) {
+            throwable.printStackTrace();
         }
     }
 }

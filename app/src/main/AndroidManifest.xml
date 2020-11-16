@@ -15,7 +15,7 @@
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning">
 
-        <receiver android:name=".utils.ServiceBroadcastReceiver"  android:exported="true">
+        <receiver android:name=".service.ServiceBroadcastReceiver"  android:exported="true">
         </receiver>
 
         <service

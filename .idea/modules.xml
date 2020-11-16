@@ -2,10 +2,11 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/MobileDev.iml" filepath="$PROJECT_DIR$/MobileDev.iml" />
-      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
-      <module fileurl="file://$PROJECT_DIR$/spotify-app-remote-release-0.6.0/spotify-app-remote-release-0.6.0.iml" filepath="$PROJECT_DIR$/spotify-app-remote-release-0.6.0/spotify-app-remote-release-0.6.0.iml" />
-      <module fileurl="file://$PROJECT_DIR$/spotify-app-remote-release-0.6.1/spotify-app-remote-release-0.6.1.iml" filepath="$PROJECT_DIR$/spotify-app-remote-release-0.6.1/spotify-app-remote-release-0.6.1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/android-spotify-music-sharing.iml" filepath="$PROJECT_DIR$/.idea/modules/android-spotify-music-sharing.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/android-spotify-music-sharing.app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/android-spotify-music-sharing.app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/spotify-app-remote-release-0.6.1/android-spotify-music-sharing.spotify-app-remote-release-0.6.1.iml" filepath="$PROJECT_DIR$/.idea/modules/spotify-app-remote-release-0.6.1/android-spotify-music-sharing.spotify-app-remote-release-0.6.1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/spotify-app-remote-release-0.7.0/android-spotify-music-sharing.spotify-app-remote-release-0.7.0.iml" filepath="$PROJECT_DIR$/.idea/modules/spotify-app-remote-release-0.7.0/android-spotify-music-sharing.spotify-app-remote-release-0.7.0.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/web-ui-lib/android-spotify-music-sharing.web-ui-lib.iml" filepath="$PROJECT_DIR$/.idea/modules/web-ui-lib/android-spotify-music-sharing.web-ui-lib.iml" />
     </modules>
   </component>
 </project>

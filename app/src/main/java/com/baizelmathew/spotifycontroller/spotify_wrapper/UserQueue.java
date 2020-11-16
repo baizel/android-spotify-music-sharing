@@ -1,9 +1,6 @@
-package com.baizelmathew.spotifycontroller.spotifywrapper;
-
-import android.util.Log;
+package com.baizelmathew.spotifycontroller.spotify_wrapper;
 
 import com.spotify.protocol.types.PlayerState;
-import com.spotify.protocol.types.Track;
 
 import java.util.LinkedList;
 import java.util.List;

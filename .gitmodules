@@ -1,0 +1,3 @@
+[submodule "web-ui-lib"]
+	path = web-ui-lib
+	url = https://github.com/baizel/spotify-web-ui.git
